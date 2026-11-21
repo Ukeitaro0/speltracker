@@ -34,5 +34,6 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 ## Status / väntar på
 - Cloudflare-konto: skapat (Google-inloggning). API-token: Robin nekade formuläret (request_credential) 2026-11-21, fråga inte igen i den chatten. Alternativ: Robin lägger in den själv under miljöns Network secrets (host api.cloudflare.com), eller manuell driftsättning via Cloudflares webbredigerare.
 - Mockup v1 (mobil bibliotek, mobil spelkort, dator bibliotek): väntar på Robins synpunkter.
+- Steg-för-steg för båda nycklarna: `SETUP.md`. Robin gör det på datorn när han har tid (Cloudflares sida fungerade dåligt på mobilen).
 - Twitch/IGDB-nyckel: Robin fixar senare (2FA-koden går till en annan telefon).
 - Grouvee-export: behövs först i fas 2.
