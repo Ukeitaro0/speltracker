@@ -16,7 +16,7 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 - Räkna på kostnad. Mål: 0 kr/mån.
 
 ## Beslut som är tagna
-- **Kategorier (status):** Wishlist, Playing, Replaying, Paused/Shelved, Abandoned, Backlog. Ett spel har en status. Hela biblioteket visas med markering per status.
+- **Kategorier (status), svenska namn sedan 2026-11-21:** Spelar (playing), Spelar om (replaying), Pausat (paused), Att spela (backlog), Önskelista (wishlist), Klarat (played), Gett upp (abandoned). Interna id:n i parentes är oförändrade. Ett spel har en status. Hela biblioteket visas med markering per status.
 - **Egna listor:** Robin skapar listor (årslistor m.m.) och lägger till spel. Ett spel kan ligga i flera listor.
 - **Betyg:** 1–5 (samma skala som Grouvee, importeras rakt av).
 - **Plattformar Robin har:** Steam (PC), PlayStation, Xbox. Plattform sätts per spel i biblioteket.
@@ -49,6 +49,6 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 - Gemensamma pastellfärger per status: Playing #A8E6CF, Replaying #C9B8FF, Backlog #B8C4D9, Wishlist #FFE3A3, Paused #FFC9A8, Abandoned #F4A9B8. Plattformsikoner från simple-icons (Xbox finns bara i äldre version, 6.0.0).
 - Steg-för-steg för båda nycklarna: `SETUP.md`. Robin gör det på datorn när han har tid (Cloudflares sida fungerade dåligt på mobilen).
 - Twitch/IGDB-nyckel: Robin fixar senare (2FA-koden går till en annan telefon).
-- Grouvee-export inläst 2026-11-21: 545 spel, 13 listor (hyllor som inte är status blev listor, med Grouvees ordning). Hyllan "Played" (336 spel) blev en sjunde status **Played** (#8FD3F4) – väntar på Robins OK. Prioritet vid flera hyllor: Playing > abandoned > Backlog > Wish List > Played; 24 spel märkta `cf` (Mer → Kolla status). Plattform: PC→Steam, PlayStation*→PS, Xbox*→Xbox, övrigt→Annan; 328 saknar plattform (Mer → Saknar plattform).
+- Grouvee-export inläst 2026-11-21: 545 spel, 13 listor (hyllor som inte är status blev listor, med Grouvees ordning). Hyllan "Played" (336 spel) blev en sjunde status, **Klarat** (#8FD3F4) – godkänd av Robin. Prioritet vid flera hyllor: Playing > abandoned > Backlog > Wish List > Played; 24 spel märkta `cf` (Mer → Kolla status). Plattform: PC→Steam, PlayStation*→PS, Xbox*→Xbox, övrigt→Annan; 328 saknar plattform (Mer → Saknar plattform).
 - Omslag: platshållare i färg tills IGDB finns (igdb_id finns för 539 av 545).
 - GitHub Pages: okänt om det är påslaget (github.io går inte att nå härifrån).
