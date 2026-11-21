@@ -56,6 +56,10 @@ svg{flex-shrink:0}
 .rank{background:rgba(10,14,13,.7);color:var(--text);border-radius:12px;min-width:26px;height:24px;padding:0 7px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .ct{font-size:16px;font-weight:600;line-height:1.15;color:#fff;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 1px 8px rgba(0,0,0,.25)}
 .nm{font-size:14px;font-weight:600;line-height:1.25;padding:0 4px;margin-bottom:-4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mr{display:flex;align-items:center;gap:8px}
+.sc{font-size:11px;font-weight:700;line-height:1;padding:3px 6px;border-radius:8px}
+.rl small.ext{color:var(--mute);font-size:12px;margin-top:2px}
+.rl small.ext b{font-weight:600}
 .meta{display:flex;align-items:center;justify-content:space-between;padding:0 4px;color:var(--mute);min-height:18px}
 .stars{font-size:13px;letter-spacing:1px;color:var(--star)}
 .stars i{font-style:normal;color:var(--staroff)}
@@ -111,7 +115,7 @@ svg{flex-shrink:0}
 .opts{display:flex;flex-direction:column;padding:0 8px 8px}
 .opt{display:flex;align-items:center;justify-content:space-between;min-height:46px;padding:0 12px;border-radius:14px;font-size:15px;width:100%}
 .opt .nl{display:flex;align-items:center;gap:10px}
-.rl{display:flex;flex-direction:column;gap:2px}
+.rl{display:flex;flex-direction:column;gap:2px;padding:10px 0}
 .rl small{font-size:13px;color:var(--star)}
 .sbig{display:flex;margin-right:-8px}
 .sbig button{width:40px;height:48px;font-size:28px;color:var(--staroff)}
@@ -181,7 +185,7 @@ svg{flex-shrink:0}
 <div id="toast" role="status"></div>
 
 <script>
-const BUILD = '20261121-2137';
+const BUILD = '20261121-2157';
 
 const ST = [
   { id: 'playing', label: 'Spelar', c: '#A8E6CF' },
@@ -196,7 +200,7 @@ const SM = Object.fromEntries(ST.map(s => [s.id, s]));
 const PLAT = [{ id: 'steam', label: 'Steam' }, { id: 'ps', label: 'PlayStation' }, { id: 'xbox', label: 'Xbox' }, { id: 'ios', label: 'iOS' }, { id: 'other', label: 'Annan plattform' }];
 const COVERS = ['#3F5A52', '#4A4A6E', '#5C4A5E', '#6A5340', '#3E5A6E', '#5A5E3C', '#6A4450', '#40604A', '#55506A', '#4A5A66', '#6A5A46', '#3F5F62'];
 const RATE = ['', 'Dåligt', 'Sådär', 'Bra', 'Riktigt bra', 'Kanonspel!'];
-const SORTS = [['add', 'Senast tillagd'], ['name', 'Namn'], ['rating', 'Betyg'], ['rel', 'Utgivning']];
+const SORTS = [['add', 'Senast tillagd'], ['name', 'Namn'], ['rating', 'Betyg'], ['cr', 'Kritikerbetyg'], ['rel', 'Utgivning']];
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -239,6 +243,7 @@ function setGame(id, fields) { PATCH.g[id] = Object.assign(PATCH.g[id] || {}, fi
 function editLists(fn) { const L = JSON.parse(JSON.stringify(PATCH.lists || BASE.lists)); fn(L); PATCH.lists = L; PATCH.lt = Date.now(); save(); }
 function setView(o) { Object.assign(V, o); lsSet('st_view_v1', V); }
 
+function scoreC(n) { return n >= 75 ? '#A8E6CF' : n >= 50 ? '#FFE3A3' : '#F4A9B8'; }
 function coverImg(g) { return g.cov ? `<img class="ci" src="https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cov}.jpg" alt="" loading="lazy" onerror="this.parentNode.classList.remove('has');this.remove()">` : ''; }
 function coverCls(g) { return g.cov ? 'cover has' : 'cover'; }
 function coverColor(g) { let h = 0; for (const ch of g.n) h = (h * 31 + ch.charCodeAt(0)) | 0; return COVERS[Math.abs(h) % COVERS.length]; }
@@ -250,6 +255,7 @@ function sortGames(arr) {
   return arr.slice().sort((a, b) =>
     s === 'name' ? cmpName(a, b) :
     s === 'rating' ? (b.r - a.r) || cmpName(a, b) :
+    s === 'cr' ? ((b.cr || 0) - (a.cr || 0)) || cmpName(a, b) :
     s === 'rel' ? (b.rel || '').localeCompare(a.rel || '') || cmpName(a, b) :
     (b.add || '').localeCompare(a.add || '') || cmpName(a, b));
 }
@@ -276,7 +282,7 @@ function card(g, rank) {
       <span class="ct">${esc(g.n)}</span>
     </span>
     <span class="nm">${esc(g.n)}</span>
-    <span class="meta"><span class="stars"${g.r ? ` title="${RATE[g.r]}"` : ''}>${stars(g.r)}</span>${g.p ? ico(g.p, 16) : ''}</span>
+    <span class="meta"><span class="stars"${g.r ? ` title="${RATE[g.r]}"` : ''}>${stars(g.r)}</span><span class="mr">${g.cr ? `<span class="sc" style="color:${scoreC(g.cr)};background:${rgba(scoreC(g.cr), .14)}" title="Kritikerbetyg (IGDB)">${g.cr}</span>` : ''}${g.p ? ico(g.p, 16) : ''}</span></span>
   </button>`;
 }
 function navRows() {
@@ -383,7 +389,7 @@ function renderGame() {
       <button class="row" data-act="so"><span>Status</span><span class="rv"><span class="dot" style="width:10px;height:10px;background:${s.c}"></span><span style="color:${s.c}">${s.label}</span><span class="mute">${ico('chev', 16)}</span></span></button>
       ${UI.so ? `<div class="opts">${ST.map(x => `<button class="opt" data-act="status" data-s="${x.id}" style="${x.id === g.s ? 'background:' + rgba(x.c, .14) : ''}"><span class="nl"><span class="dot" style="width:10px;height:10px;background:${x.c}"></span>${x.label}</span>${x.id === g.s ? `<span style="color:var(--acc)">${ico('check', 18)}</span>` : ''}</button>`).join('')}</div>` : ''}
       <div class="sep"></div>
-      <div class="row"><span class="rl">Betyg<small>${g.r ? RATE[g.r] : 'Inget betyg än'}</small></span><span class="sbig">${[1, 2, 3, 4, 5].map(n => `<button data-act="rate" data-n="${n}" aria-label="${n} av 5, ${RATE[n]}" title="${RATE[n]}" class="${n <= g.r ? 'on' : ''}">★</button>`).join('')}</span></div>
+      <div class="row"><span class="rl">Betyg<small>${g.r ? RATE[g.r] : 'Inget betyg än'}</small>${g.cr || g.ur ? `<small class="ext">${[['IGDB', g.cr], ['User', g.ur]].filter(x => x[1]).map(([l, n]) => `${l} <b style="color:${scoreC(n)}">${n}</b>`).join(' · ')}</small>` : ''}</span><span class="sbig">${[1, 2, 3, 4, 5].map(n => `<button data-act="rate" data-n="${n}" aria-label="${n} av 5, ${RATE[n]}" title="${RATE[n]}" class="${n <= g.r ? 'on' : ''}">★</button>`).join('')}</span></div>
       <div class="sep"></div>
       <div class="row"><span>Plattform</span><span class="plats">${PLAT.map(p => `<button data-act="plat" data-p="${p.id}" aria-label="${p.label}" aria-pressed="${g.p === p.id}" class="${g.p === p.id ? 'on' : ''}">${ico(p.id, 20)}</button>`).join('')}</span></div>
       <div class="sep"></div>

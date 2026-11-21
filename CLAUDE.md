@@ -20,6 +20,7 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 - **Egna listor:** Robin skapar listor (årslistor m.m.) och lägger till spel. Ett spel kan ligga i flera listor.
 - **Betyg:** 1–5 (samma skala som Grouvee, importeras rakt av). Ord per steg: 1 Dåligt, 2 Sådär, 3 Bra, 4 Riktigt bra, 5 Kanonspel! Visas under "Betyg" på spelkortet och som hovertext på datorn.
 - **Plattformar Robin har:** Steam (PC), PlayStation, Xbox, iOS (id `ios`, Apple-ikon, tillagd 2026-11-21) + Annan (`other`, t.ex. Nintendo). Plattform sätts per spel i biblioteket.
+- **Kritiker-/användarbetyg (2026-11-21):** från IGDB, `cr` = aggregated_rating, `ur` = rating (0–100), hämtas med `tools/fetch_covers.py`. Bibliotek: liten färgad siffra (cr) bredvid stjärnorna. Spelkort: diskret rad `IGDB 87 · User 82` under eget betyg. Färg: ≥75 grön, 50–74 gul, <50 rosa. Sorteringsval "Kritikerbetyg". Metacritic valdes bort (inget API).
 - **Notering:** kort fritext per spel (`note`, max 500 tecken), fält under Plattform på spelkortet. Sparas när fältet lämnas.
 - **Speldata:** IGDB (Twitch). Kräver server pga hemlig nyckel + CORS → anrop går via Workern. Speldata (namn, omslag, år, plattformar) sparas i vår databas när spelet läggs till, så appen inte beror på IGDB för visning.
 - **Backend:** Cloudflare Worker + D1 (gratisnivå). Valt före Supabase eftersom Supabase gratis pausar projekt efter 7 dagars inaktivitet.
@@ -29,7 +30,7 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 
 ## Filer i repot
 - `index.html` – hela appen (CSS + JS inline). `const BUILD` sätts av `bump.sh`; appen laddar om sig själv när `version.json` ändras.
-- `data/library.json` – grundbiblioteket `{games:[{id,n,igdb,rel,s,r,p,praw,gen,dev,add,url,cov?,note?,cf?}], lists:[{id,name,ids}]}`. Skapas med `python3 tools/import_grouvee.py <export.json>`. Kontouppgifter tas aldrig med (repot är publikt).
+- `data/library.json` – grundbiblioteket `{games:[{id,n,igdb,rel,s,r,p,praw,gen,dev,add,url,cov?,cr?,ur?,note?,cf?}], lists:[{id,name,ids}]}`. Skapas med `python3 tools/import_grouvee.py <export.json>`. Kontouppgifter tas aldrig med (repot är publikt).
 - Lokala ändringar ligger i localStorage `st_patch_v1` `{g:{id:{s,r,p,note,t}}, add:[], del:{}, lists}` ovanpå grundfilen. Robin kan trycka Mer → Kopiera ändringar och klistra in i chatten; Claude kör `python3 tools/merge_patch.py patch.json` (spara inklistrad text som fil först) och committar `data/library.json`. Appen rensar själv bort lokala ändringar som redan finns i grundfilen (`prune()`), så Robin behöver inte slänga något.
 - `dev/test.js` – Playwright-test med skärmdumpar (mobil iPhone 13 + dator 1440×900): `node dev/test.js <utmapp>`.
 
