@@ -109,6 +109,8 @@ svg{flex-shrink:0}
 .opts{display:flex;flex-direction:column;padding:0 8px 8px}
 .opt{display:flex;align-items:center;justify-content:space-between;min-height:46px;padding:0 12px;border-radius:14px;font-size:15px;width:100%}
 .opt .nl{display:flex;align-items:center;gap:10px}
+.rl{display:flex;flex-direction:column;gap:2px}
+.rl small{font-size:13px;color:var(--star)}
 .sbig{display:flex;margin-right:-8px}
 .sbig button{width:40px;height:48px;font-size:28px;color:var(--staroff)}
 .sbig button.on{color:var(--star)}
@@ -174,7 +176,7 @@ svg{flex-shrink:0}
 <div id="toast" role="status"></div>
 
 <script>
-const BUILD = '20261121-1838';
+const BUILD = '20261121-1840';
 
 const ST = [
   { id: 'playing', label: 'Spelar', c: '#A8E6CF' },
@@ -188,6 +190,7 @@ const ST = [
 const SM = Object.fromEntries(ST.map(s => [s.id, s]));
 const PLAT = [{ id: 'steam', label: 'Steam' }, { id: 'ps', label: 'PlayStation' }, { id: 'xbox', label: 'Xbox' }, { id: 'other', label: 'Annan plattform' }];
 const COVERS = ['#3F5A52', '#4A4A6E', '#5C4A5E', '#6A5340', '#3E5A6E', '#5A5E3C', '#6A4450', '#40604A', '#55506A', '#4A5A66', '#6A5A46', '#3F5F62'];
+const RATE = ['', 'Dåligt', 'Sådär', 'Bra', 'Riktigt bra', 'Kanonspel!'];
 const SORTS = [['add', 'Senast tillagd'], ['name', 'Namn'], ['rating', 'Betyg'], ['rel', 'Utgivning']];
 
 const $ = s => document.querySelector(s);
@@ -265,7 +268,7 @@ function card(g, rank) {
       <span class="ctop"><span class="pill" style="background:${s.c}">${s.label}</span>${rank ? `<span class="rank">${rank}</span>` : ''}</span>
       <span class="ct">${esc(g.n)}</span>
     </span>
-    <span class="meta"><span class="stars">${stars(g.r)}</span>${g.p ? ico(g.p, 16) : ''}</span>
+    <span class="meta"><span class="stars"${g.r ? ` title="${RATE[g.r]}"` : ''}>${stars(g.r)}</span>${g.p ? ico(g.p, 16) : ''}</span>
   </button>`;
 }
 function navRows() {
@@ -372,7 +375,7 @@ function renderGame() {
       <button class="row" data-act="so"><span>Status</span><span class="rv"><span class="dot" style="width:10px;height:10px;background:${s.c}"></span><span style="color:${s.c}">${s.label}</span><span class="mute">${ico('chev', 16)}</span></span></button>
       ${UI.so ? `<div class="opts">${ST.map(x => `<button class="opt" data-act="status" data-s="${x.id}" style="${x.id === g.s ? 'background:' + rgba(x.c, .14) : ''}"><span class="nl"><span class="dot" style="width:10px;height:10px;background:${x.c}"></span>${x.label}</span>${x.id === g.s ? `<span style="color:var(--acc)">${ico('check', 18)}</span>` : ''}</button>`).join('')}</div>` : ''}
       <div class="sep"></div>
-      <div class="row"><span>Betyg</span><span class="sbig">${[1, 2, 3, 4, 5].map(n => `<button data-act="rate" data-n="${n}" aria-label="${n} av 5" class="${n <= g.r ? 'on' : ''}">★</button>`).join('')}</span></div>
+      <div class="row"><span class="rl">Betyg<small>${g.r ? RATE[g.r] : 'Inget betyg än'}</small></span><span class="sbig">${[1, 2, 3, 4, 5].map(n => `<button data-act="rate" data-n="${n}" aria-label="${n} av 5, ${RATE[n]}" title="${RATE[n]}" class="${n <= g.r ? 'on' : ''}">★</button>`).join('')}</span></div>
       <div class="sep"></div>
       <div class="row"><span>Plattform</span><span class="plats">${PLAT.map(p => `<button data-act="plat" data-p="${p.id}" aria-label="${p.label}" aria-pressed="${g.p === p.id}" class="${g.p === p.id ? 'on' : ''}">${ico(p.id, 20)}</button>`).join('')}</span></div>
     </div>

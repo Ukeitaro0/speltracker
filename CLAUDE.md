@@ -18,7 +18,7 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 ## Beslut som är tagna
 - **Kategorier (status), svenska namn sedan 2026-11-21:** Spelar (playing), Spelar om (replaying), Pausat (paused), Att spela (backlog), Önskelista (wishlist), Klarat (played), Gett upp (abandoned). Interna id:n i parentes är oförändrade. Ett spel har en status. Hela biblioteket visas med markering per status.
 - **Egna listor:** Robin skapar listor (årslistor m.m.) och lägger till spel. Ett spel kan ligga i flera listor.
-- **Betyg:** 1–5 (samma skala som Grouvee, importeras rakt av).
+- **Betyg:** 1–5 (samma skala som Grouvee, importeras rakt av). Ord per steg: 1 Dåligt, 2 Sådär, 3 Bra, 4 Riktigt bra, 5 Kanonspel! Visas under "Betyg" på spelkortet och som hovertext på datorn.
 - **Plattformar Robin har:** Steam (PC), PlayStation, Xbox. Plattform sätts per spel i biblioteket.
 - **Speldata:** IGDB (Twitch). Kräver server pga hemlig nyckel + CORS → anrop går via Workern. Speldata (namn, omslag, år, plattformar) sparas i vår databas när spelet läggs till, så appen inte beror på IGDB för visning.
 - **Backend:** Cloudflare Worker + D1 (gratisnivå). Valt före Supabase eftersom Supabase gratis pausar projekt efter 7 dagars inaktivitet.
