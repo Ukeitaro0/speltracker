@@ -49,8 +49,7 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 - Gemensamma pastellfärger per status: Playing #A8E6CF, Replaying #C9B8FF, Backlog #B8C4D9, Wishlist #FFE3A3, Paused #FFC9A8, Abandoned #F4A9B8. Plattformsikoner från simple-icons (Xbox finns bara i äldre version, 6.0.0).
 - Steg-för-steg för båda nycklarna: `SETUP.md`. Robin gör det på datorn när han har tid (Cloudflares sida fungerade dåligt på mobilen).
 - Twitch/IGDB-nyckel: Robin har Client ID + Secret (2026-11-21). Lägger dem som miljövariabler `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` i molnmiljön "Standard" (gäller från nästa session). Värdarna id.twitch.tv, api.igdb.com, images.igdb.com är tillåtna i miljön.
-  - **Nästa steg när variablerna finns:** kör `python3 tools/fetch_covers.py` (lägger `cov` = IGDB image_id på spelen), visa omslag i appen från `https://images.igdb.com/igdb/image/upload/t_cover_big/<cov>.jpg` (platshållaren kvar som reserv), testa, bump, push.
+  - Klart 2026-11-21: omslag hämtade (`cov` på 539 av 545 spel, `python3 tools/fetch_covers.py`) och visas i appen. 6 spel saknar igdb-id → färgruta.
   - Sök i IGDB från appen kräver Workern (`worker/worker.js`, steg 3 i SETUP.md) – görs på datorn senare.
 - Grouvee-export inläst 2026-11-21: 545 spel, 13 listor (hyllor som inte är status blev listor, med Grouvees ordning). Hyllan "Played" (336 spel) blev en sjunde status, **Klarat** (#8FD3F4) – godkänd av Robin. Prioritet vid flera hyllor: Playing > abandoned > Backlog > Wish List > Played; 24 spel märkta `cf` (Mer → Kolla status). Plattform: PC→Steam, PlayStation*→PS, Xbox*→Xbox, övrigt→Annan; 328 saknade plattform (Mer → Saknar plattform); 313 kvar efter första inklistringen 2026-11-21.
-- Omslag: platshållare i färg tills IGDB finns (igdb_id finns för 539 av 545).
 - GitHub Pages: påslaget 2026-11-21, appen nås på https://ukeitaro0.github.io/speltracker/ (github.io går inte att nå från Claudes molnmiljö – testa lokalt med dev/test.js).
