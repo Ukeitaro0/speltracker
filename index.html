@@ -174,7 +174,7 @@ svg{flex-shrink:0}
 <div id="toast" role="status"></div>
 
 <script>
-const BUILD = '20261121-1645';
+const BUILD = '20261121-1838';
 
 const ST = [
   { id: 'playing', label: 'Spelar', c: '#A8E6CF' },
@@ -206,9 +206,23 @@ let V = Object.assign({ f: 'all', sort: 'add' }, ls('st_view_v1', {}));
 const UI = { tab: 'lib', q: '', game: null, so: false, lo: false, oo: false, sheet: false, wipe: 0 };
 let GAMES = [], GM = {}, LISTS = [];
 
+// Tar bort lokala ändringar som redan finns i grundfilen (efter att Claude slagit ihop dem).
+function prune() {
+  const pg = PATCH.g || {}; let n = 0;
+  BASE.games.forEach(b => {
+    const f = pg[b.id]; if (!f) return;
+    ['s', 'r', 'p'].forEach(k => { if (k in f && f[k] === (b[k] === undefined ? null : b[k])) { delete f[k]; n++; } });
+    if (!['s', 'r', 'p'].some(k => k in f)) delete pg[b.id];
+  });
+  if (n) lsSet('st_patch_v1', PATCH);
+}
 function rebuild() {
   const del = PATCH.del || {}, pg = PATCH.g || {};
-  GAMES = BASE.games.concat(PATCH.add || []).filter(g => !del[g.id]).map(g => Object.assign({}, g, pg[g.id] || {}));
+  GAMES = BASE.games.concat(PATCH.add || []).filter(g => !del[g.id]).map(g => {
+    const m = Object.assign({}, g, pg[g.id] || {});
+    if (pg[g.id] && 's' in pg[g.id]) delete m.cf;
+    return m;
+  });
   GM = {}; GAMES.forEach(g => { GM[g.id] = g; });
   LISTS = (PATCH.lists || BASE.lists).map(l => ({ id: l.id, name: l.name, ids: l.ids.filter(id => GM[id]) }));
 }
@@ -466,7 +480,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) chec
 
 // ---------- Start ----------
 fetch('data/library.json?v=' + BUILD, { cache: 'no-cache' }).then(r => r.json()).then(d => {
-  BASE = d; rebuild(); render(); checkVersion();
+  BASE = d; prune(); rebuild(); render(); checkVersion();
 }).catch(() => {
   rebuild(); render();
   $('#mbody').innerHTML = '<div class="empty">Kunde inte läsa biblioteket. Kolla nätet och ladda om.</div>';
