@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#121A18">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Speltracker">
+<title>Speltracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#121A18; --surf:#1B2622; --surf2:#24312C; --hi:#2F3F39; --line:#26332E;
+  --text:#EAF2EE; --mute:#9DB0A8; --acc:#B5E3C8; --acc2:#D4F0DF; --star:#EBD9B4; --staroff:#33423C;
+  --st: env(safe-area-inset-top); --sb: env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+body.lock{overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none;padding:0}
+a{color:var(--acc)}
+svg{flex-shrink:0}
+.mute{color:var(--mute)}
+
+#app{min-height:100vh}
+#side{display:none}
+#main{padding:calc(14px + var(--st)) 18px calc(120px + var(--sb))}
+
+/* Rubrikrad */
+.lhead{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px}
+.ttl{display:flex;align-items:center;gap:10px;min-height:48px;min-width:0;text-align:left}
+.ttl h1,.h1{margin:0;font-size:28px;font-weight:700;letter-spacing:-.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttl .chev{color:var(--mute)}
+.dot{width:12px;height:12px;border-radius:6px;display:inline-block;flex-shrink:0}
+.addb{width:48px;height:48px;border-radius:24px;background:var(--acc);color:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sub{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;font-size:14px;color:var(--mute);margin:2px 0 16px}
+.sub select{appearance:none;-webkit-appearance:none;background:var(--surf);border:none;border-radius:14px;padding:7px 28px 7px 12px;color:var(--text);font-size:14px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239DB0A8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
+.sub .lnk{color:var(--acc);font-size:14px;min-height:32px}
+
+/* Rutnät */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 14px}
+.card{display:flex;flex-direction:column;gap:8px;text-align:left;min-width:0}
+.cover{aspect-ratio:3/4;border-radius:22px;padding:11px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 8px 24px rgba(0,0,0,.25);overflow:hidden;width:100%}
+.ctop{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.pill{border-radius:12px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--bg);white-space:nowrap}
+.rank{background:rgba(10,14,13,.7);color:var(--text);border-radius:12px;min-width:26px;height:24px;padding:0 7px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.ct{font-size:16px;font-weight:600;line-height:1.15;color:#fff;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 1px 8px rgba(0,0,0,.25)}
+.meta{display:flex;align-items:center;justify-content:space-between;padding:0 4px;color:var(--mute);min-height:18px}
+.stars{font-size:13px;letter-spacing:1px;color:var(--star)}
+.stars i{font-style:normal;color:var(--staroff)}
+.empty{padding:40px 10px;text-align:center;color:var(--mute);line-height:1.5}
+
+/* Rader (listor, mer, ark) */
+.rows{display:flex;flex-direction:column;gap:4px}
+.nrow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:50px;padding:0 14px;border-radius:16px;font-size:16px;text-align:left;width:100%}
+.nrow.on{background:var(--hi)}
+.nrow .nl{display:flex;align-items:center;gap:12px;min-width:0}
+.nrow .nl span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nrow .nc{color:var(--mute);font-size:14px}
+.nrow.add{color:var(--acc)}
+.sect{padding:16px 14px 6px;font-size:13px;font-weight:500;color:var(--mute)}
+.panel{background:var(--surf);border-radius:24px;padding:6px}
+.info{font-size:13px;color:var(--mute);padding:14px;line-height:1.5}
+
+/* Sök */
+.search{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 16px;border-radius:24px;background:var(--surf);color:var(--mute);flex:1}
+.search input{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--text);font-size:16px}
+.manual{margin-top:20px;width:100%;min-height:52px;border-radius:20px;border:1px dashed var(--staroff);color:var(--acc);font-size:15px;padding:0 16px}
+
+/* Flikrad (mobil) */
+#tabs{position:fixed;left:16px;right:16px;bottom:calc(14px + var(--sb));height:64px;border-radius:32px;background:#1F2B27;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:20}
+#tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--mute);min-height:56px;justify-content:center}
+#tabs button.on{color:var(--acc);font-weight:600}
+
+/* Ark (mobil) */
+#sheet{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;justify-content:flex-end}
+#sheet.open{display:flex}
+.backdrop{position:absolute;inset:0;background:rgba(6,10,9,.6)}
+.sheetp{position:relative;background:var(--surf);border-radius:28px 28px 0 0;padding:10px 10px calc(24px + var(--sb));max-height:84vh;overflow-y:auto;animation:up .22s ease-out}
+.handle{width:40px;height:5px;border-radius:3px;background:var(--staroff);margin:0 auto 6px}
+@keyframes up{from{transform:translateY(40px)}to{transform:none}}
+
+/* Spelkort */
+#game{position:fixed;inset:0;z-index:50;display:none}
+#game.open{display:block}
+#game .backdrop{display:none}
+.gp{position:absolute;inset:0;overflow-y:auto;background:linear-gradient(180deg,var(--tint) 0,var(--bg) 360px),var(--bg);padding:calc(10px + var(--st)) 18px calc(40px + var(--sb));display:flex;flex-direction:column;gap:22px}
+.gp>*{flex-shrink:0}
+.gtop{display:flex;justify-content:space-between;margin:0 -8px}
+.icon{width:48px;height:48px;border-radius:24px;display:flex;align-items:center;justify-content:center;color:var(--text)}
+.ghero{display:flex;gap:16px;align-items:center}
+.ghero .cover{width:112px;flex-shrink:0;border-radius:22px;padding:10px;justify-content:flex-end}
+.ghero .cover .ct{font-size:12px;-webkit-line-clamp:5}
+.ghero h1{margin:0 0 6px;font-size:26px;line-height:1.1;font-weight:700;letter-spacing:-.5px}
+.box{background:var(--surf);border-radius:24px;overflow:hidden;display:flex;flex-direction:column}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:60px;padding:0 16px;font-size:16px;width:100%;text-align:left}
+.rv{display:flex;align-items:center;gap:8px;font-weight:600;min-width:0}
+.rv.mute{font-weight:400;font-size:14px}
+.sep{height:1px;background:var(--line);margin:0 16px}
+.opts{display:flex;flex-direction:column;padding:0 8px 8px}
+.opt{display:flex;align-items:center;justify-content:space-between;min-height:46px;padding:0 12px;border-radius:14px;font-size:15px;width:100%}
+.opt .nl{display:flex;align-items:center;gap:10px}
+.sbig{display:flex;margin-right:-8px}
+.sbig button{width:40px;height:48px;font-size:28px;color:var(--staroff)}
+.sbig button.on{color:var(--star)}
+.plats{display:flex;gap:6px;margin-right:-6px}
+.plats button{width:44px;height:44px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:var(--surf2);color:var(--mute)}
+.plats button.on{background:var(--acc);color:var(--bg)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:0 14px 14px}
+.chip{min-height:40px;padding:0 14px;border-radius:20px;font-size:14px;background:var(--surf2)}
+.chip.on{background:var(--acc);color:var(--bg)}
+.chip.add{background:none;border:1px dashed var(--staroff);color:var(--acc)}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;padding:0 16px 16px;font-size:14px}
+.dl dt{color:var(--mute)}
+.dl dd{margin:0}
+.note{margin:0 16px 14px;padding:10px 12px;border-radius:14px;background:var(--surf2);font-size:13px;color:var(--star);line-height:1.4}
+.danger{margin:0 16px 16px;min-height:44px;border-radius:14px;color:#F4A9B8;background:rgba(244,169,184,.08);font-size:14px}
+
+#toast{position:fixed;left:50%;bottom:calc(96px + var(--sb));transform:translateX(-50%);background:var(--acc);color:var(--bg);padding:10px 16px;border-radius:18px;font-size:14px;font-weight:600;z-index:60;display:none;max-width:90vw;text-align:center}
+#toast.show{display:block}
+
+/* Dator */
+@media (min-width:900px){
+  #app{display:grid;grid-template-columns:272px minmax(0,1fr)}
+  #side{display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;overflow-y:auto;background:#17211E;border-right:1px solid var(--line);padding:24px 12px}
+  #side .brand{font-size:20px;font-weight:700;padding:0 14px 10px}
+  #side .nrow{min-height:42px;font-size:15px;border-radius:14px}
+  #side .foot{margin-top:auto;border-top:1px solid var(--line);padding-top:10px}
+  #main{padding:28px 36px 60px}
+  #tabs,#sheet{display:none !important}
+  .ttl{pointer-events:none}.ttl .chev{display:none}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:24px 18px}
+  .dhead{display:flex;align-items:center;gap:12px}
+  .dhead .search{max-width:320px;min-height:44px}
+  #game .backdrop{display:block}
+  .gp{inset:auto;left:50%;top:50%;transform:translate(-50%,-50%);width:460px;max-height:88vh;border-radius:28px;box-shadow:0 30px 80px rgba(0,0,0,.5);padding:14px 22px 26px}
+  #toast{bottom:30px}
+}
+@media (max-width:899px){ .dhead .search{display:none} }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-steam" viewBox="0 0 24 24"><path fill="currentColor" d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.454 1.012H7.54zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z"/></symbol>
+  <symbol id="i-ps" viewBox="0 0 24 24"><path fill="currentColor" d="M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1.151.794-.991.636.18.76.814.76 1.505v5.875c2.441 1.193 4.362-.002 4.362-3.152 0-3.237-1.126-4.675-4.438-5.827-1.307-.448-3.728-1.186-5.39-1.502zm4.656 16.241l6.296-2.275c.715-.258.826-.625.246-.818-.586-.192-1.637-.139-2.357.123l-4.205 1.5V14.98l.24-.085s1.201-.42 2.913-.615c1.696-.18 3.785.03 5.437.661 1.848.601 2.04 1.472 1.576 2.072-.465.6-1.622 1.036-1.622 1.036l-8.544 3.107V18.86zM1.807 18.6c-1.9-.545-2.214-1.668-1.352-2.32.801-.586 2.16-1.052 2.16-1.052l5.615-2.013v2.313L4.205 17c-.705.271-.825.632-.239.826.586.195 1.637.15 2.343-.12L8.247 17v2.074c-.12.03-.256.044-.39.073-1.939.331-3.996.196-6.038-.479z"/></symbol>
+  <symbol id="i-xbox" viewBox="0 0 24 24"><path fill="currentColor" d="M4.102 21.033C6.211 22.881 8.977 24 12 24c3.026 0 5.789-1.119 7.902-2.967 1.877-1.912-4.316-8.709-7.902-11.417-3.582 2.708-9.779 9.505-7.898 11.417zm11.16-14.406c2.5 2.961 7.484 10.313 6.076 12.912C23.002 17.48 24 14.861 24 12.004c0-3.34-1.365-6.362-3.57-8.536 0 0-.027-.022-.082-.042-.063-.022-.152-.045-.281-.045-.592 0-1.985.434-4.805 3.246zM3.654 3.426c-.057.02-.082.041-.086.042C1.365 5.642 0 8.664 0 12.004c0 2.854.998 5.473 2.661 7.533-1.401-2.605 3.579-9.951 6.08-12.91-2.82-2.813-4.216-3.245-4.806-3.245-.131 0-.223.021-.281.046v-.002zM12 3.551S9.055 1.828 6.755 1.746c-.903-.033-1.454.295-1.521.339C7.379.646 9.659 0 11.984 0H12c2.334 0 4.605.646 6.766 2.085-.068-.046-.615-.372-1.52-.339C14.946 1.828 12 3.545 12 3.545v.006z"/></symbol>
+  <symbol id="i-other" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="6"/><path d="M6.5 12h4M8.5 10v4M15.5 11h.01M18 13h.01"/></g></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M5 12l5 5 9-10"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></g></symbol>
+  <symbol id="i-lib" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2.5"/><rect x="14" y="3" width="7" height="7" rx="2.5"/><rect x="3" y="14" width="7" height="7" rx="2.5"/><rect x="14" y="14" width="7" height="7" rx="2.5"/></g></symbol>
+  <symbol id="i-lists" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></g></symbol>
+</svg>
+
+<div id="app">
+  <aside id="side"></aside>
+  <main id="main"><div id="mhead"></div><div id="mbody"></div></main>
+</div>
+<nav id="tabs"></nav>
+<div id="sheet"></div>
+<div id="game"></div>
+<div id="toast" role="status"></div>
+
+<script>
+const BUILD = '20261121-1612';
+
+const ST = [
+  { id: 'playing', label: 'Playing', c: '#A8E6CF' },
+  { id: 'replaying', label: 'Replaying', c: '#C9B8FF' },
+  { id: 'paused', label: 'Paused', c: '#FFC9A8' },
+  { id: 'backlog', label: 'Backlog', c: '#B8C4D9' },
+  { id: 'wishlist', label: 'Wishlist', c: '#FFE3A3' },
+  { id: 'played', label: 'Played', c: '#8FD3F4' },
+  { id: 'abandoned', label: 'Abandoned', c: '#F4A9B8' }
+];
+const SM = Object.fromEntries(ST.map(s => [s.id, s]));
+const PLAT = [{ id: 'steam', label: 'Steam' }, { id: 'ps', label: 'PlayStation' }, { id: 'xbox', label: 'Xbox' }, { id: 'other', label: 'Annan plattform' }];
+const COVERS = ['#3F5A52', '#4A4A6E', '#5C4A5E', '#6A5340', '#3E5A6E', '#5A5E3C', '#6A4450', '#40604A', '#55506A', '#4A5A66', '#6A5A46', '#3F5F62'];
+const SORTS = [['add', 'Senast tillagd'], ['name', 'Namn'], ['rating', 'Betyg'], ['rel', 'Utgivning']];
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ico = (id, size) => `<svg width="${size}" height="${size}" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+const rgba = (h, o) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${o})`; };
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+function ls(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
+const isDesk = () => matchMedia('(min-width:900px)').matches;
+
+// ---------- Data ----------
+let BASE = { games: [], lists: [] };
+let PATCH = ls('st_patch_v1', null) || { g: {}, add: [], del: {}, lists: null };
+let V = Object.assign({ f: 'all', sort: 'add' }, ls('st_view_v1', {}));
+const UI = { tab: 'lib', q: '', game: null, so: false, lo: false, oo: false, sheet: false, wipe: 0 };
+let GAMES = [], GM = {}, LISTS = [];
+
+function rebuild() {
+  const del = PATCH.del || {}, pg = PATCH.g || {};
+  GAMES = BASE.games.concat(PATCH.add || []).filter(g => !del[g.id]).map(g => Object.assign({}, g, pg[g.id] || {}));
+  GM = {}; GAMES.forEach(g => { GM[g.id] = g; });
+  LISTS = (PATCH.lists || BASE.lists).map(l => ({ id: l.id, name: l.name, ids: l.ids.filter(id => GM[id]) }));
+}
+function save() { lsSet('st_patch_v1', PATCH); rebuild(); render(); }
+function setGame(id, fields) { PATCH.g[id] = Object.assign(PATCH.g[id] || {}, fields, { t: Date.now() }); save(); }
+function editLists(fn) { const L = JSON.parse(JSON.stringify(PATCH.lists || BASE.lists)); fn(L); PATCH.lists = L; PATCH.lt = Date.now(); save(); }
+function setView(o) { Object.assign(V, o); lsSet('st_view_v1', V); }
+
+function coverColor(g) { let h = 0; for (const ch of g.n) h = (h * 31 + ch.charCodeAt(0)) | 0; return COVERS[Math.abs(h) % COVERS.length]; }
+function year(g) { return (g.rel || '').slice(0, 4); }
+function stars(r) { return r ? '★'.repeat(r) + '<i>' + '★'.repeat(5 - r) + '</i>' : '<i>★★★★★</i>'; }
+function cmpName(a, b) { return a.n.localeCompare(b.n, 'sv'); }
+function sortGames(arr) {
+  const s = V.sort;
+  return arr.slice().sort((a, b) =>
+    s === 'name' ? cmpName(a, b) :
+    s === 'rating' ? (b.r - a.r) || cmpName(a, b) :
+    s === 'rel' ? (b.rel || '').localeCompare(a.rel || '') || cmpName(a, b) :
+    (b.add || '').localeCompare(a.add || '') || cmpName(a, b));
+}
+function current() {
+  const f = V.f;
+  if (f.startsWith('s:') && SM[f.slice(2)]) { const s = SM[f.slice(2)]; return { arr: sortGames(GAMES.filter(g => g.s === s.id)), title: s.label, dot: s.c }; }
+  if (f.startsWith('l:')) {
+    const l = LISTS.find(x => x.id === f.slice(2));
+    if (l) return { arr: l.ids.map(id => GM[id]), title: l.name, list: l };
+  }
+  if (f === 'noplat') return { arr: sortGames(GAMES.filter(g => !g.p)), title: 'Saknar plattform' };
+  if (f === 'cf') return { arr: sortGames(GAMES.filter(g => g.cf)), title: 'Kolla status' };
+  if (f !== 'all') setView({ f: 'all' });
+  return { arr: sortGames(GAMES), title: 'Alla spel' };
+}
+function searchHits(q) { const n = norm(q); if (!n) return []; return sortGames(GAMES.filter(g => norm(g.n).includes(n))).slice(0, 80); }
+
+// ---------- Rendering ----------
+function card(g, rank) {
+  const s = SM[g.s] || SM.backlog;
+  return `<button class="card" data-act="game" data-id="${g.id}">
+    <span class="cover" style="background:${coverColor(g)}">
+      <span class="ctop"><span class="pill" style="background:${s.c}">${s.label}</span>${rank ? `<span class="rank">${rank}</span>` : ''}</span>
+      <span class="ct">${esc(g.n)}</span>
+    </span>
+    <span class="meta"><span class="stars">${stars(g.r)}</span>${g.p ? ico(g.p, 16) : ''}</span>
+  </button>`;
+}
+function navRows() {
+  const cnt = id => GAMES.filter(g => g.s === id).length;
+  const row = (f, label, n, dot) => `<button class="nrow${V.f === f && UI.tab === 'lib' && !UI.q ? ' on' : ''}" data-act="filter" data-f="${f}">
+      <span class="nl">${dot ? `<span class="dot" style="background:${dot}"></span>` : ''}<span>${esc(label)}</span></span><span class="nc">${n}</span></button>`;
+  return `<div class="sect">Kategorier</div><div class="rows">${row('all', 'Alla spel', GAMES.length, '#EAF2EE')}${ST.map(s => row('s:' + s.id, s.label, cnt(s.id), s.c)).join('')}</div>
+    <div class="sect">Listor</div><div class="rows">${LISTS.map(l => row('l:' + l.id, l.name, l.ids.length)).join('')}
+    <button class="nrow add" data-act="newlist"><span class="nl">${ico('plus', 18)}<span>Ny lista</span></span></button></div>`;
+}
+function renderSide() {
+  $('#side').innerHTML = `<div class="brand">Speltracker</div>${navRows()}
+    <div class="foot"><button class="nrow${UI.tab === 'more' ? ' on' : ''}" data-act="tab" data-tab="more"><span class="nl"><span>Mer och inställningar</span></span></button></div>`;
+}
+function renderSheet() {
+  const el = $('#sheet');
+  el.className = UI.sheet ? 'open' : '';
+  el.innerHTML = UI.sheet ? `<div class="backdrop" data-act="sheetclose"></div><div class="sheetp"><div class="handle"></div>${navRows()}</div>` : '';
+}
+function renderTabs() {
+  const t = (id, icon, label) => `<button class="${UI.tab === id ? 'on' : ''}" data-act="tab" data-tab="${id}">${ico(icon, 22)}${label}</button>`;
+  $('#tabs').innerHTML = t('lib', 'lib', 'Bibliotek') + t('lists', 'lists', 'Listor') + t('search', 'search', 'Sök') + t('more', 'more', 'Mer');
+}
+let lastHead = '';
+function renderHead() {
+  let h = '';
+  if (UI.tab === 'lib') {
+    const c = current();
+    h = `<div class="lhead">
+        <button class="ttl" data-act="sheet">${c.dot ? `<span class="dot" style="background:${c.dot}"></span>` : ''}<h1>${esc(c.title)}</h1><span class="chev">${ico('chev', 20)}</span></button>
+        <div class="dhead"><label class="search">${ico('search', 18)}<input id="q" type="search" placeholder="Sök i biblioteket" aria-label="Sök i biblioteket" autocomplete="off"></label>
+        <button class="addb" data-act="tab" data-tab="search" aria-label="Lägg till spel">${ico('plus', 22)}</button></div>
+      </div>
+      <div class="sub" id="sub"></div>`;
+  } else if (UI.tab === 'search') {
+    h = `<div class="lhead"><span class="h1">Sök</span></div>
+      <label class="search" style="margin-bottom:18px">${ico('search', 18)}<input id="q" type="search" placeholder="Spelets namn" aria-label="Sök spel" autocomplete="off"></label>`;
+  } else if (UI.tab === 'lists') {
+    h = `<div class="lhead"><span class="h1">Listor</span></div>`;
+  } else {
+    h = `<div class="lhead"><span class="h1">Mer</span></div>`;
+  }
+  if (h !== lastHead) {
+    $('#mhead').innerHTML = h; lastHead = h;
+    const q = $('#q'); if (q) q.value = UI.q;
+  }
+}
+function renderSub(c) {
+  const el = $('#sub'); if (!el) return;
+  if (UI.q && isDesk()) { el.innerHTML = `${searchHits(UI.q).length} träffar`; return; }
+  el.innerHTML = c.list
+    ? `${c.arr.length} spel · listordning <button class="lnk" data-act="renamelist">Byt namn</button><button class="lnk" data-act="dellist">Ta bort lista</button>`
+    : `${c.arr.length} spel · <select data-act="sort" aria-label="Sortering">${SORTS.map(([k, l]) => `<option value="${k}"${V.sort === k ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
+}
+function searchBody() {
+  const hits = searchHits(UI.q);
+  if (!UI.q) return `<div class="empty">Sök bland dina ${GAMES.length} spel.<br>Sökning i IGDB (med omslag) kommer när nyckeln är på plats.</div>`;
+  return (hits.length ? `<div class="grid">${hits.map(g => card(g)).join('')}</div>` : `<div class="empty">Inget spel i biblioteket heter så.</div>`)
+    + `<button class="manual" data-act="addman">Lägg till ”${esc(UI.q)}” för hand</button>`;
+}
+function renderBody() {
+  let b = '';
+  if (UI.tab === 'lib') {
+    const c = current();
+    renderSub(c);
+    if (UI.q && isDesk()) b = searchBody();
+    else b = c.arr.length ? `<div class="grid">${c.arr.map((g, i) => card(g, c.list ? i + 1 : 0)).join('')}</div>` : `<div class="empty">Inga spel här än.</div>`;
+  } else if (UI.tab === 'search') {
+    b = searchBody();
+  } else if (UI.tab === 'lists') {
+    b = `<div class="panel rows">${LISTS.map(l => `<button class="nrow" data-act="filter" data-f="l:${l.id}"><span class="nl"><span>${esc(l.name)}</span></span><span class="nc">${l.ids.length}</span></button>`).join('')}
+      <button class="nrow add" data-act="newlist"><span class="nl">${ico('plus', 18)}<span>Ny lista</span></span></button></div>`;
+  } else {
+    const np = GAMES.filter(g => !g.p).length, cf = GAMES.filter(g => g.cf).length;
+    const changed = Object.keys(PATCH.g || {}).length + (PATCH.add || []).length + Object.keys(PATCH.del || {}).length + (PATCH.lists ? 1 : 0);
+    b = `<div class="panel rows">
+        <button class="nrow" data-act="filter" data-f="noplat"><span class="nl"><span>Saknar plattform</span></span><span class="nc">${np}</span></button>
+        <button class="nrow" data-act="filter" data-f="cf"><span class="nl"><span>Kolla status (låg på flera hyllor i Grouvee)</span></span><span class="nc">${cf}</span></button>
+      </div>
+      <div class="sect">Ändringar på den här enheten</div>
+      <div class="panel rows">
+        <button class="nrow" data-act="export"><span class="nl"><span>Kopiera ändringar</span></span><span class="nc">${changed}</span></button>
+        <button class="nrow" data-act="wipe"><span class="nl"><span style="color:#F4A9B8">${UI.wipe ? 'Tryck igen för att slänga' : 'Släng lokala ändringar'}</span></span></button>
+      </div>
+      <div class="info">${BASE.games.length} spel från Grouvee${BASE.exported ? ' (export ' + esc(BASE.exported.slice(0, 10)) + ')' : ''}.<br>
+        Ändringar sparas bara på den här enheten tills servern finns. Kopiera dem och klistra in i chatten med Claude så hamnar de i grundfilen.<br>Version ${BUILD}</div>`;
+  }
+  $('#mbody').innerHTML = b;
+}
+function renderGame() {
+  const el = $('#game'), g = UI.game && GM[UI.game];
+  document.body.classList.toggle('lock', !!g);
+  el.className = g ? 'open' : '';
+  if (!g) { el.innerHTML = ''; return; }
+  const s = SM[g.s] || SM.backlog;
+  const inL = LISTS.filter(l => l.ids.includes(g.id));
+  const sub = [year(g), (g.dev || [])[0]].filter(Boolean).join(' · ');
+  el.innerHTML = `<div class="backdrop" data-act="close"></div>
+  <div class="gp" style="--tint:${rgba(s.c, 0.16)}">
+    <div class="gtop"><button class="icon" data-act="close" aria-label="Tillbaka">${ico('back', 24)}</button></div>
+    <div class="ghero"><span class="cover" style="background:${coverColor(g)}"><span class="ct">${esc(g.n)}</span></span>
+      <div><h1>${esc(g.n)}</h1><span class="mute">${esc(sub)}</span></div></div>
+    <div class="box">
+      <button class="row" data-act="so"><span>Status</span><span class="rv"><span class="dot" style="width:10px;height:10px;background:${s.c}"></span><span style="color:${s.c}">${s.label}</span><span class="mute">${ico('chev', 16)}</span></span></button>
+      ${UI.so ? `<div class="opts">${ST.map(x => `<button class="opt" data-act="status" data-s="${x.id}" style="${x.id === g.s ? 'background:' + rgba(x.c, .14) : ''}"><span class="nl"><span class="dot" style="width:10px;height:10px;background:${x.c}"></span>${x.label}</span>${x.id === g.s ? `<span style="color:var(--acc)">${ico('check', 18)}</span>` : ''}</button>`).join('')}</div>` : ''}
+      <div class="sep"></div>
+      <div class="row"><span>Betyg</span><span class="sbig">${[1, 2, 3, 4, 5].map(n => `<button data-act="rate" data-n="${n}" aria-label="${n} av 5" class="${n <= g.r ? 'on' : ''}">★</button>`).join('')}</span></div>
+      <div class="sep"></div>
+      <div class="row"><span>Plattform</span><span class="plats">${PLAT.map(p => `<button data-act="plat" data-p="${p.id}" aria-label="${p.label}" aria-pressed="${g.p === p.id}" class="${g.p === p.id ? 'on' : ''}">${ico(p.id, 20)}</button>`).join('')}</span></div>
+    </div>
+    <div class="box">
+      <button class="row" data-act="lo"><span>Listor</span><span class="rv mute">${inL.length ? inL.length + (inL.length === 1 ? ' lista' : ' listor') : 'Ingen'} ${ico('chev', 16)}</span></button>
+      ${UI.lo ? `<div class="chips">${LISTS.map(l => `<button class="chip${l.ids.includes(g.id) ? ' on' : ''}" data-act="togglelist" data-l="${l.id}">${esc(l.name)}</button>`).join('')}<button class="chip add" data-act="newlist" data-addgame="1">+ Ny lista</button></div>` : ''}
+      <div class="sep"></div>
+      <button class="row" data-act="oo"><span>Om spelet</span><span class="rv mute">${ico('chev', 16)}</span></button>
+      ${UI.oo ? `${g.cf ? '<div class="note">Spelet låg på flera hyllor i Grouvee. Kolla att statusen stämmer.</div>' : ''}
+        <dl class="dl">
+          <dt>Utgivning</dt><dd>${esc(g.rel || '–')}</dd>
+          <dt>Utvecklare</dt><dd>${esc((g.dev || []).join(', ') || '–')}</dd>
+          <dt>Genre</dt><dd>${esc((g.gen || []).join(', ') || '–')}</dd>
+          <dt>I Grouvee</dt><dd>${esc((g.praw || []).join(', ') || '–')}</dd>
+          <dt>Tillagd</dt><dd>${esc((g.add || '').slice(0, 10) || '–')}</dd>
+          ${g.url ? `<dt>Länk</dt><dd><a href="${esc(g.url)}" target="_blank" rel="noopener">Grouvee</a></dd>` : ''}
+        </dl>
+        <button class="danger" data-act="delgame">Ta bort ur biblioteket</button>` : ''}
+    </div>
+  </div>`;
+}
+function render() {
+  renderSide(); renderSheet(); renderTabs(); renderHead(); renderBody(); renderGame();
+}
+
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.className = 'show'; clearTimeout(toastT); toastT = setTimeout(() => { t.className = ''; }, 2600); }
+
+// ---------- Händelser ----------
+function openGame(id) {
+  UI.game = id; UI.so = false; UI.lo = false; UI.oo = false;
+  history.pushState({ game: id }, '');
+  renderGame();
+  const gp = $('#game .gp'); if (gp) gp.scrollTop = 0;
+}
+function closeGame() { if (history.state && history.state.game) history.back(); else { UI.game = null; render(); } }
+addEventListener('popstate', () => { if (UI.game) { UI.game = null; render(); } });
+
+function newList(addGame) {
+  const name = (prompt('Namn på den nya listan') || '').trim();
+  if (!name) return;
+  editLists(L => { L.push({ id: 'l' + Date.now(), name, ids: addGame ? [addGame] : [] }); });
+  toast('Listan ”' + name + '” skapad');
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act, g = UI.game && GM[UI.game];
+  switch (a) {
+    case 'game': openGame(b.dataset.id); break;
+    case 'close': closeGame(); break;
+    case 'sheet': if (!isDesk()) { UI.sheet = true; renderSheet(); } break;
+    case 'sheetclose': UI.sheet = false; renderSheet(); break;
+    case 'filter': setView({ f: b.dataset.f }); UI.tab = 'lib'; UI.sheet = false; UI.q = ''; render(); scrollTo(0, 0); break;
+    case 'tab': UI.tab = b.dataset.tab; UI.sheet = false; if (UI.tab !== 'search') UI.q = ''; render(); scrollTo(0, 0);
+      if (UI.tab === 'search') { const q = $('#q'); if (q) q.focus(); } break;
+    case 'so': UI.so = !UI.so; renderGame(); break;
+    case 'lo': UI.lo = !UI.lo; renderGame(); break;
+    case 'oo': UI.oo = !UI.oo; renderGame(); break;
+    case 'status': UI.so = false; setGame(g.id, { s: b.dataset.s }); break;
+    case 'rate': { const n = +b.dataset.n; setGame(g.id, { r: n === g.r ? 0 : n }); break; }
+    case 'plat': setGame(g.id, { p: g.p === b.dataset.p ? null : b.dataset.p }); break;
+    case 'togglelist': editLists(L => { const l = L.find(x => x.id === b.dataset.l); const i = l.ids.indexOf(g.id); if (i >= 0) l.ids.splice(i, 1); else l.ids.push(g.id); }); break;
+    case 'newlist': newList(b.dataset.addgame && g ? g.id : null); break;
+    case 'renamelist': { const c = current(); if (!c.list) break; const name = (prompt('Nytt namn', c.list.name) || '').trim(); if (name) editLists(L => { L.find(x => x.id === c.list.id).name = name; }); break; }
+    case 'dellist': { const c = current(); if (!c.list) break; if (confirm('Ta bort listan ”' + c.list.name + '”? Spelen ligger kvar i biblioteket.')) { editLists(L => { L.splice(L.findIndex(x => x.id === c.list.id), 1); }); setView({ f: 'all' }); render(); } break; }
+    case 'delgame': if (confirm('Ta bort ”' + g.n + '” ur biblioteket?')) { PATCH.del[g.id] = Date.now(); closeGame(); save(); } break;
+    case 'addman': {
+      const name = UI.q.trim(); if (!name) break;
+      const id = 'c' + Date.now();
+      PATCH.add.push({ id, n: name, igdb: null, rel: '', s: 'backlog', r: 0, p: null, praw: [], gen: [], dev: [], add: new Date().toISOString() });
+      save(); openGame(id); UI.so = true; renderGame(); break;
+    }
+    case 'export': {
+      const txt = JSON.stringify({ speltracker: BUILD, patch: PATCH });
+      (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Kopierat. Klistra in i chatten med Claude.'), () => { prompt('Kopiera texten:', txt); });
+      break;
+    }
+    case 'wipe':
+      if (!UI.wipe) { UI.wipe = 1; renderBody(); setTimeout(() => { UI.wipe = 0; if (UI.tab === 'more') renderBody(); }, 4000); }
+      else { PATCH = { g: {}, add: [], del: {}, lists: null }; UI.wipe = 0; save(); toast('Lokala ändringar slängda'); }
+      break;
+  }
+});
+document.addEventListener('change', e => {
+  if (e.target.matches('[data-act="sort"]')) { setView({ sort: e.target.value }); renderBody(); }
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'q') { UI.q = e.target.value; renderBody(); }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (UI.game) closeGame(); else if (UI.sheet) { UI.sheet = false; renderSheet(); } } });
+matchMedia('(min-width:900px)').addEventListener('change', () => { lastHead = ''; render(); });
+
+// ---------- Version: ladda om när en ny version finns ----------
+function checkVersion() {
+  if (BUILD === 'dev') return;
+  fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.json()).then(v => {
+    if (v.build && v.build !== BUILD && sessionStorage.getItem('reloaded') !== v.build) {
+      sessionStorage.setItem('reloaded', v.build);
+      location.replace(location.pathname + '?v=' + v.build);
+    }
+  }).catch(() => { });
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkVersion(); });
+
+// ---------- Start ----------
+fetch('data/library.json?v=' + BUILD, { cache: 'no-cache' }).then(r => r.json()).then(d => {
+  BASE = d; rebuild(); render(); checkVersion();
+}).catch(() => {
+  rebuild(); render();
+  $('#mbody').innerHTML = '<div class="empty">Kunde inte läsa biblioteket. Kolla nätet och ladda om.</div>';
+});
+</script>
+</body>
+</html>
