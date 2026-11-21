@@ -11,7 +11,7 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 - Svara på svenska, kort, punktat, ett steg i taget. Inga artiga följdfrågor på slutet.
 - **Less is more.** Nya saker ska passa in i helheten utan att plottra.
 - **Ta aldrig bort något utan Robins godkännande.** Föreslå i stället.
-- Bolla och visa mockups innan större omgörningar.
+- Bolla och visa mockups innan större omgörningar. Mockup-ritytan: https://claude.ai/artifact/RJYV7ypRaEgfS3ioQ6UBdb
 - Robin committar inte själv. Claude committar och pushar direkt till `main` (GitHub Pages bygger från main) och driftsätter Workern.
 - Räkna på kostnad. Mål: 0 kr/mån.
 
@@ -32,6 +32,7 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 3. Konton: Steam (officiellt API) → Xbox (OpenXBL) → PSN (inofficiellt, skört).
 
 ## Status / väntar på
-- Cloudflare-konto: skapat (Google-inloggning). API-token för driftsättning: se chatten.
+- Cloudflare-konto: skapat (Google-inloggning). API-token: Robin nekade formuläret (request_credential) 2026-11-21, fråga inte igen i den chatten. Alternativ: Robin lägger in den själv under miljöns Network secrets (host api.cloudflare.com), eller manuell driftsättning via Cloudflares webbredigerare.
+- Mockup v1 (mobil bibliotek, mobil spelkort, dator bibliotek): väntar på Robins synpunkter.
 - Twitch/IGDB-nyckel: Robin fixar senare (2FA-koden går till en annan telefon).
 - Grouvee-export: behövs först i fas 2.
