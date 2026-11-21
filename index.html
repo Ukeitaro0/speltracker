@@ -55,6 +55,7 @@ svg{flex-shrink:0}
 .pill{border-radius:12px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--bg);white-space:nowrap}
 .rank{background:rgba(10,14,13,.7);color:var(--text);border-radius:12px;min-width:26px;height:24px;padding:0 7px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .ct{font-size:16px;font-weight:600;line-height:1.15;color:#fff;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 1px 8px rgba(0,0,0,.25)}
+.nm{font-size:14px;font-weight:600;line-height:1.25;padding:0 4px;margin-bottom:-4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .meta{display:flex;align-items:center;justify-content:space-between;padding:0 4px;color:var(--mute);min-height:18px}
 .stars{font-size:13px;letter-spacing:1px;color:var(--star)}
 .stars i{font-style:normal;color:var(--staroff)}
@@ -180,7 +181,7 @@ svg{flex-shrink:0}
 <div id="toast" role="status"></div>
 
 <script>
-const BUILD = '20261121-2125';
+const BUILD = '20261121-2137';
 
 const ST = [
   { id: 'playing', label: 'Spelar', c: '#A8E6CF' },
@@ -274,6 +275,7 @@ function card(g, rank) {
       <span class="ctop"><span class="pill" style="background:${s.c}">${s.label}</span>${rank ? `<span class="rank">${rank}</span>` : ''}</span>
       <span class="ct">${esc(g.n)}</span>
     </span>
+    <span class="nm">${esc(g.n)}</span>
     <span class="meta"><span class="stars"${g.r ? ` title="${RATE[g.r]}"` : ''}>${stars(g.r)}</span>${g.p ? ico(g.p, 16) : ''}</span>
   </button>`;
 }
@@ -475,6 +477,8 @@ document.addEventListener('change', e => {
 document.addEventListener('input', e => {
   if (e.target.id === 'q') { UI.q = e.target.value; renderBody(); }
 });
+// iOS: efter att tangentbordet stängts kan fasta element (flikraden) hamna fel tills sidan ritas om.
+document.addEventListener('focusout', e => { if (e.target.matches('input,textarea')) setTimeout(() => { window.scrollTo(window.scrollX, window.scrollY); const t = $('#tabs'); t.style.display = 'none'; void t.offsetHeight; t.style.display = ''; }, 60); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (UI.game) closeGame(); else if (UI.sheet) { UI.sheet = false; renderSheet(); } } });
 matchMedia('(min-width:900px)').addEventListener('change', () => { lastHead = ''; render(); });
 
