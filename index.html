@@ -50,6 +50,7 @@ svg{flex-shrink:0}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 14px}
 .card{display:flex;flex-direction:column;gap:8px;text-align:left;min-width:0}
 .cover{aspect-ratio:3/4;border-radius:22px;padding:11px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 8px 24px rgba(0,0,0,.25);overflow:hidden;width:100%}
+.cover{position:relative}.cover>*{position:relative}.cover>.ci{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.cover.has>.ct{display:none}
 .ctop{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
 .pill{border-radius:12px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--bg);white-space:nowrap}
 .rank{background:rgba(10,14,13,.7);color:var(--text);border-radius:12px;min-width:26px;height:24px;padding:0 7px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
@@ -176,7 +177,7 @@ svg{flex-shrink:0}
 <div id="toast" role="status"></div>
 
 <script>
-const BUILD = '20261121-1840';
+const BUILD = '20261121-2040';
 
 const ST = [
   { id: 'playing', label: 'Spelar', c: '#A8E6CF' },
@@ -234,6 +235,8 @@ function setGame(id, fields) { PATCH.g[id] = Object.assign(PATCH.g[id] || {}, fi
 function editLists(fn) { const L = JSON.parse(JSON.stringify(PATCH.lists || BASE.lists)); fn(L); PATCH.lists = L; PATCH.lt = Date.now(); save(); }
 function setView(o) { Object.assign(V, o); lsSet('st_view_v1', V); }
 
+function coverImg(g) { return g.cov ? `<img class="ci" src="https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cov}.jpg" alt="" loading="lazy" onerror="this.parentNode.classList.remove('has');this.remove()">` : ''; }
+function coverCls(g) { return g.cov ? 'cover has' : 'cover'; }
 function coverColor(g) { let h = 0; for (const ch of g.n) h = (h * 31 + ch.charCodeAt(0)) | 0; return COVERS[Math.abs(h) % COVERS.length]; }
 function year(g) { return (g.rel || '').slice(0, 4); }
 function stars(r) { return r ? '★'.repeat(r) + '<i>' + '★'.repeat(5 - r) + '</i>' : '<i>★★★★★</i>'; }
@@ -264,7 +267,7 @@ function searchHits(q) { const n = norm(q); if (!n) return []; return sortGames(
 function card(g, rank) {
   const s = SM[g.s] || SM.backlog;
   return `<button class="card" data-act="game" data-id="${g.id}">
-    <span class="cover" style="background:${coverColor(g)}">
+    <span class="${coverCls(g)}" style="background:${coverColor(g)}">${coverImg(g)}
       <span class="ctop"><span class="pill" style="background:${s.c}">${s.label}</span>${rank ? `<span class="rank">${rank}</span>` : ''}</span>
       <span class="ct">${esc(g.n)}</span>
     </span>
@@ -369,7 +372,7 @@ function renderGame() {
   el.innerHTML = `<div class="backdrop" data-act="close"></div>
   <div class="gp" style="--tint:${rgba(s.c, 0.16)}">
     <div class="gtop"><button class="icon" data-act="close" aria-label="Tillbaka">${ico('back', 24)}</button></div>
-    <div class="ghero"><span class="cover" style="background:${coverColor(g)}"><span class="ct">${esc(g.n)}</span></span>
+    <div class="ghero"><span class="${coverCls(g)}" style="background:${coverColor(g)}">${coverImg(g)}<span class="ct">${esc(g.n)}</span></span>
       <div><h1>${esc(g.n)}</h1><span class="mute">${esc(sub)}</span></div></div>
     <div class="box">
       <button class="row" data-act="so"><span>Status</span><span class="rv"><span class="dot" style="width:10px;height:10px;background:${s.c}"></span><span style="color:${s.c}">${s.label}</span><span class="mute">${ico('chev', 16)}</span></span></button>
