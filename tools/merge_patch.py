@@ -5,7 +5,7 @@ Användning: python3 tools/merge_patch.py patch.json
 """
 import json, sys
 
-FIELDS = ('s', 'r', 'p')
+FIELDS = ('s', 'r', 'p', 'note')
 
 def main(src, dst='data/library.json'):
     patch = json.load(open(src, encoding='utf-8'))['patch']
@@ -21,6 +21,8 @@ def main(src, dst='data/library.json'):
         for k in FIELDS:
             if k in f and g.get(k) != f[k]:
                 g[k] = f[k]; changed += 1
+        if g.get('note') == '':
+            g.pop('note')
         if 's' in f:
             g.pop('cf', None)
     for a in patch.get('add') or []:
