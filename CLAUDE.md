@@ -16,7 +16,7 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 - Räkna på kostnad. Mål: 0 kr/mån.
 
 ## Beslut som är tagna
-- **Kategorier (status), svenska namn sedan 2026-11-21:** Spelar (playing), Spelar om (replaying), Pausat (paused), Att spela (backlog), Önskelista (wishlist), Klarat (played), Gett upp (abandoned). Interna id:n i parentes är oförändrade. Ett spel har en status. Hela biblioteket visas med markering per status.
+- **Kategorier (status), namn (Backlog/Wishlist på engelska sedan 2026-11-21):** Spelar (playing), Spelar om (replaying), Pausat (paused), Backlog (backlog), Wishlist (wishlist), Klarat (played), Gett upp (abandoned). Interna id:n i parentes är oförändrade. Ett spel har en status. Hela biblioteket visas med markering per status.
 - **Egna listor:** Robin skapar listor (årslistor m.m.) och lägger till spel. Ett spel kan ligga i flera listor.
 - **Betyg:** 1–5 (samma skala som Grouvee, importeras rakt av). Ord per steg: 1 Dåligt, 2 Sådär, 3 Bra, 4 Riktigt bra, 5 Kanonspel! Visas under "Betyg" på spelkortet och som hovertext på datorn.
 - **Plattformar Robin har:** Steam (PC), PlayStation, Xbox, iOS (id `ios`, Apple-ikon, tillagd 2026-11-21) + Annan (`other`, t.ex. Nintendo). Plattform sätts per spel i biblioteket.
@@ -50,7 +50,7 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 - Gemensamma pastellfärger per status: Playing #A8E6CF, Replaying #C9B8FF, Backlog #B8C4D9, Wishlist #FFE3A3, Paused #FFC9A8, Abandoned #F4A9B8. Plattformsikoner från simple-icons (Xbox finns bara i äldre version, 6.0.0).
 - Steg-för-steg för båda nycklarna: `SETUP.md`. Robin gör det på datorn när han har tid (Cloudflares sida fungerade dåligt på mobilen).
 - Twitch/IGDB-nyckel: Robin har Client ID + Secret (2026-11-21). Lägger dem som miljövariabler `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` i molnmiljön "Standard" (gäller från nästa session). Värdarna id.twitch.tv, api.igdb.com, images.igdb.com är tillåtna i miljön.
-  - Klart 2026-11-21: omslag hämtade (`cov` på 539 av 545 spel, `python3 tools/fetch_covers.py`) och visas i appen. 6 spel saknar igdb-id → färgruta.
+  - Klart 2026-11-21: omslag på alla 545 spel (`python3 tools/fetch_covers.py`; de 6 utan igdb-id kopplades för hand). Egen bild per spel: inte byggt, kräver lagring (Worker) – tas upp igen då.
   - Sök i IGDB från appen kräver Workern (`worker/worker.js`, steg 3 i SETUP.md) – görs på datorn senare.
 - Grouvee-export inläst 2026-11-21: 545 spel, 13 listor (hyllor som inte är status blev listor, med Grouvees ordning). Hyllan "Played" (336 spel) blev en sjunde status, **Klarat** (#8FD3F4) – godkänd av Robin. Prioritet vid flera hyllor: Playing > abandoned > Backlog > Wish List > Played; 24 spel märkta `cf` (Mer → Kolla status). Plattform: PC→Steam, PlayStation*→PS, Xbox*→Xbox, övrigt→Annan; 328 saknade plattform (Mer → Saknar plattform); 313 kvar efter första inklistringen 2026-11-21.
 - GitHub Pages: påslaget 2026-11-21, appen nås på https://ukeitaro0.github.io/speltracker/ (github.io går inte att nå från Claudes molnmiljö – testa lokalt med dev/test.js).
