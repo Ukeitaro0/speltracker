@@ -26,6 +26,16 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 - **Import:** Grouvee CSV först (officiell export). IGN Playlist används som avstämning (vad saknas/skiljer), inte som fullständig import.
 - **Mobil:** flikar längst ner. **Dator:** sidomeny (samma mönster som Hyllan).
 
+## Filer i repot
+- `index.html` – hela appen (CSS + JS inline). `const BUILD` sätts av `bump.sh`; appen laddar om sig själv när `version.json` ändras.
+- `data/library.json` – grundbiblioteket `{games:[{id,n,igdb,rel,s,r,p,praw,gen,dev,add,url,cf?}], lists:[{id,name,ids}]}`. Skapas med `python3 tools/import_grouvee.py <export.json>`. Kontouppgifter tas aldrig med (repot är publikt).
+- Lokala ändringar ligger i localStorage `st_patch_v1` `{g:{id:{s,r,p,t}}, add:[], del:{}, lists}` ovanpå grundfilen. Robin kan trycka Mer → Kopiera ändringar och klistra in i chatten; Claude slår då ihop dem i `data/library.json` (inget skript än, gör det i Python).
+- `dev/test.js` – Playwright-test med skärmdumpar (mobil iPhone 13 + dator 1440×900): `node dev/test.js <utmapp>`.
+
+## Flöde för en ändring
+1. Ändra `index.html`. 2. Syntaxkolla JS (extrahera `<script>` och `node --check`). 3. `node dev/test.js` och titta på skärmdumparna.
+4. `./bump.sh`. 5. Commit (svensk text) och `git -c push.negotiate=true push origin HEAD:main`. 6. Berätta vilken version (BUILD) det blev.
+
 ## Faser
 1. Kärnan: sök via IGDB, lägg till, status, betyg, plattform, biblioteksvy.
 2. Grouvee-import med matchningsrapport, egna listor, avstämning mot IGN.
@@ -39,4 +49,6 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 - Gemensamma pastellfärger per status: Playing #A8E6CF, Replaying #C9B8FF, Backlog #B8C4D9, Wishlist #FFE3A3, Paused #FFC9A8, Abandoned #F4A9B8. Plattformsikoner från simple-icons (Xbox finns bara i äldre version, 6.0.0).
 - Steg-för-steg för båda nycklarna: `SETUP.md`. Robin gör det på datorn när han har tid (Cloudflares sida fungerade dåligt på mobilen).
 - Twitch/IGDB-nyckel: Robin fixar senare (2FA-koden går till en annan telefon).
-- Grouvee-export: behövs först i fas 2.
+- Grouvee-export inläst 2026-11-21: 545 spel, 13 listor (hyllor som inte är status blev listor, med Grouvees ordning). Hyllan "Played" (336 spel) blev en sjunde status **Played** (#8FD3F4) – väntar på Robins OK. Prioritet vid flera hyllor: Playing > abandoned > Backlog > Wish List > Played; 24 spel märkta `cf` (Mer → Kolla status). Plattform: PC→Steam, PlayStation*→PS, Xbox*→Xbox, övrigt→Annan; 328 saknar plattform (Mer → Saknar plattform).
+- Omslag: platshållare i färg tills IGDB finns (igdb_id finns för 539 av 545).
+- GitHub Pages: okänt om det är påslaget (github.io går inte att nå härifrån).
