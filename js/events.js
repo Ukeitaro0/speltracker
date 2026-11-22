@@ -133,6 +133,7 @@ const ACTIONS = {
     UI.so = true;
     renderGame();
   },
+  fold: b => { toggleFold(b.dataset.k); renderSide(); renderSheet(); if (UI.tab === 'lists') renderBody(); },
   synckey: () => connectSync(),
   syncnow: () => { syncNow(); renderBody(); },
   syncoff: () => disconnectSync(),
@@ -196,6 +197,14 @@ document.addEventListener('input', e => {
   }
 });
 document.addEventListener('keydown', e => {
+  // "/" = sök (om man inte redan skriver någonstans)
+  if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName) && !UI.game) {
+    e.preventDefault();
+    if (!(isDesk() && UI.tab === 'lib')) go({ tab: 'search' }, true);
+    const q = $('#q');
+    if (q) q.focus();
+    return;
+  }
   if (e.key !== 'Escape') return;
   if (UI.big) { UI.big = false; renderGame(); }
   else if (UI.game) closeGame();

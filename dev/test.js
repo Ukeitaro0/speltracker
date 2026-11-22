@@ -149,6 +149,15 @@ const errors = [];
     q.on('pageerror', e => errors.push('dator: ' + e.message));
     await q.goto(URL); await q.waitForSelector('.card');
     await q.screenshot({ path: out + '/d1_bibliotek.png' });
+    // Sidomeny: årslistor hopfällda från början, nyaste året först när de fälls ut
+    if (await q.$('#side [data-f^="l:"][data-f*="l1795"]')) errors.push('dator: årslistor syntes trots hopfälld grupp');
+    await q.click('#side [data-act="fold"][data-k="years"]');
+    const yrs = await q.$$eval('#side .sscroll .rows:last-child .nrow', els => els.map(e => e.textContent.trim().match(/\d{4}/)?.[0]).filter(Boolean).map(Number));
+    if (yrs.join() !== yrs.slice().sort((a, b) => b - a).join() || yrs.length < 10) errors.push('dator: årslistor inte i fallande ordning ' + yrs);
+    await q.screenshot({ path: out + '/d1b_sidomeny.png' });
+    await q.keyboard.press('/');
+    if (!(await q.evaluate(() => document.activeElement && document.activeElement.id === 'q'))) errors.push('dator: / fokuserade inte sökrutan');
+    await q.keyboard.press('Escape'); await q.evaluate(() => document.activeElement.blur());
     await q.click('#side [data-tab="stats"]');
     await q.screenshot({ path: out + '/d3_statistik.png' });
     await q.click('[data-act="year"][data-y="2025"]');

@@ -56,6 +56,11 @@ svg{flex-shrink:0}
 .nrow .nc{color:var(--mute);font-size:14px}
 .nrow.add{color:var(--acc)}
 .sect{padding:16px 14px 6px;font-size:13px;font-weight:500;color:var(--mute)}
+.sect.fold{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:40px;text-align:left}
+.sect.fold i{font-style:normal;opacity:.7}
+.sect.fold svg{transform:rotate(-90deg);transition:transform .15s}
+.sect.fold.open svg{transform:none}
+.panel .sect.fold{padding:8px 14px}
 .panel{background:var(--surf);border-radius:24px;padding:6px}
 .info{font-size:13px;color:var(--mute);padding:14px;line-height:1.5}
 
@@ -204,7 +209,8 @@ button.ror{width:100%}
 /* Dator */
 @media (min-width:900px){
   #app{display:grid;grid-template-columns:272px minmax(0,1fr)}
-  #side{display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;overflow-y:auto;background:#17211E;border-right:1px solid var(--line);padding:24px 12px}
+  #side{display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;overflow:hidden;background:#17211E;border-right:1px solid var(--line);padding:24px 12px}
+  #side .sscroll{flex:1;min-height:0;overflow-y:auto;margin:0 -12px;padding:0 12px;border-top:1px solid var(--line)}
   #side .brand{font-size:20px;font-weight:700;padding:0 14px 10px}
   #side .nrow{min-height:42px;font-size:15px;border-radius:14px}
   #side .foot{margin-top:auto;border-top:1px solid var(--line);padding-top:10px}

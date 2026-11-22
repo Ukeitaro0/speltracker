@@ -48,23 +48,30 @@ function navRows() {
       <span class="nl">${color ? dot(color) : ''}<span>${esc(label)}</span></span><span class="nc">${n}</span></button>`;
   };
   const count = id => GAMES.filter(g => g.s === id).length;
-  return `<div class="sect">Kategorier</div>
-    <div class="rows">
-      ${row('all', 'Alla spel', GAMES.length, '#EAF2EE')}
-      ${ST.map(s => row('s:' + s.id, s.label, count(s.id), s.c)).join('')}
-    </div>
-    <div class="sect">Listor</div>
-    <div class="rows">
-      ${LISTS.map(l => row('l:' + l.id, l.name, l.ids.length)).join('')}
-      <button class="nrow add" data-act="newlist"><span class="nl">${ico('plus', 18)}<span>Ny lista</span></span></button>
-    </div>`;
+  const { own, years } = listGroups();
+  return foldGroup('cat', 'Kategorier', row('all', 'Alla spel', GAMES.length, '#EAF2EE')
+      + ST.map(s => row('s:' + s.id, s.label, count(s.id), s.c)).join(''))
+    + foldGroup('lists', 'Listor', own.map(l => row('l:' + l.id, l.name, l.ids.length)).join('')
+      + `<button class="nrow add" data-act="newlist"><span class="nl">${ico('plus', 18)}<span>Ny lista</span></span></button>`)
+    + (years.length ? foldGroup('years', 'Årslistor', years.map(l => row('l:' + l.id, l.name, l.ids.length)).join(''), years.length) : '');
+}
+// Rubrik som fäller ihop/upp sin grupp. Läget sparas per enhet (FOLD i data.js).
+function foldGroup(k, title, rows, n) {
+  const open = !FOLD[k];
+  return `<button class="sect fold${open ? ' open' : ''}" data-act="fold" data-k="${k}" aria-expanded="${open}">
+      <span>${title}${n ? ` <i>${n}</i>` : ''}</span>${ico('chev', 14)}</button>
+    ${open ? `<div class="rows">${rows}</div>` : ''}`;
 }
 function renderSide() {
   const tabRow = (tab, label, icon) => `<button class="nrow${UI.tab === tab ? ' on' : ''}" data-act="tab" data-tab="${tab}">
       <span class="nl">${icon ? ico(icon, 18) : ''}<span>${label}</span></span></button>`;
+  // Statistik överst och Inställningar längst ner står still; kategorier och listor rullar emellan.
+  const scroll = $('#side .sscroll'), top = scroll ? scroll.scrollTop : 0;
   $('#side').innerHTML = `<div class="brand">Speltracker</div>
-    ${navRows()}
-    <div class="foot">${tabRow('stats', 'Statistik', 'stats')}${tabRow('more', 'Mer och inställningar')}</div>`;
+    ${tabRow('stats', 'Statistik', 'stats')}
+    <div class="sscroll">${navRows()}</div>
+    <div class="foot">${tabRow('more', 'Inställningar', 'more')}</div>`;
+  $('#side .sscroll').scrollTop = top;
 }
 function renderSheet() {
   const el = $('#sheet');
@@ -167,11 +174,12 @@ function libBody() {
   return c.arr.length ? grid(c.arr.map((g, i) => card(g, c.list ? i + 1 : 0))) : `<div class="empty">Inga spel här än.</div>`;
 }
 function listsBody() {
-  return `<div class="panel rows">
-    ${LISTS.map(l => `<button class="nrow" data-act="filter" data-f="l:${l.id}">
-      <span class="nl"><span>${esc(l.name)}</span></span><span class="nc">${l.ids.length}</span></button>`).join('')}
-    <button class="nrow add" data-act="newlist"><span class="nl">${ico('plus', 18)}<span>Ny lista</span></span></button>
-  </div>`;
+  const { own, years } = listGroups();
+  const row = l => `<button class="nrow" data-act="filter" data-f="l:${l.id}">
+      <span class="nl"><span>${esc(l.name)}</span></span><span class="nc">${l.ids.length}</span></button>`;
+  return `<div class="panel rows">${own.map(row).join('')}
+      <button class="nrow add" data-act="newlist"><span class="nl">${ico('plus', 18)}<span>Ny lista</span></span></button></div>
+    ${years.length ? `<div class="panel">${foldGroup('years', 'Årslistor', years.map(row).join(''), years.length)}</div>` : ''}`;
 }
 function moreBody() {
   const row = (act, label, n, extra = '') => `<button class="nrow" data-act="${act}"${extra}>

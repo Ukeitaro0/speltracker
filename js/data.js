@@ -86,6 +86,18 @@ const UI = {                       // tillfälligt läge i gränssnittet
 let GAMES = [], GM = {}, LISTS = [], SERIES = {};   // SERIES = {serienamn: antal spel i biblioteket}
 
 function setView(o) { Object.assign(V, o); lsSet('st_view_v1', V); }
+// Hopfällda grupper i menyerna (per enhet). Årslistor är hopfällda från början.
+const FOLD = Object.assign({ years: true }, ls('st_fold_v1', {}));
+function toggleFold(k) { FOLD[k] = !FOLD[k]; lsSet('st_fold_v1', FOLD); }
+
+// Listorna delade i egna listor (Robins ordning) och årslistor ("played ÅÅÅÅ", nyaste året först).
+function listGroups() {
+  const yr = l => { const m = l.name.match(YEAR_LIST); return m ? +m[1] : 0; };
+  return {
+    own: LISTS.filter(l => !yr(l)),
+    years: LISTS.filter(l => yr(l)).sort((a, b) => yr(b) - yr(a))
+  };
+}
 
 // ---------- Bygga biblioteket ----------
 const PATCH_KEYS = ['s', 'r', 'p', 'note', 'pl'];
