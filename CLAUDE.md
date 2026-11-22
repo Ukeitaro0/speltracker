@@ -33,13 +33,20 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 - **Mobil:** flikar längst ner. **Dator:** sidomeny (samma mönster som Hyllan).
 
 ## Filer i repot
-- `index.html` – hela appen (CSS + JS inline). `const BUILD` sätts av `bump.sh`; appen laddar om sig själv när `version.json` ändras.
+- `index.html` – skal: ikoner (SVG-symboler), behållare och skript i ordning. `const BUILD` och `?v=` på css/js sätts av `bump.sh`; appen laddar om sig själv när `version.json` ändras. Ingen byggprocess.
+- `style.css` – all stil. Färgerna som variabler i `:root`; datoranpassning i `@media (min-width:900px)` längst ner.
+- `js/data.js` – konstanter, hjälpare, tillstånd (BASE/PATCH/UI) och all logik som ändrar data (setGame, editLists, setStatus, genomspelningar, sortering/urval).
+- `js/views.js` – all HTML-ritning (kort, navigering, flikar, spelkortet uppdelat i delar). Läser bara data.
+- `js/stats.js` – statistikfliken (översikt + årsvy).
+- `js/events.js` – `ACTIONS`-tabellen: knappar har `data-act="namn"` → `ACTIONS[namn](knapp, spel)`. Plus change/input, dra-för-att-flytta.
+- `js/start.js` – laddar library.json och kollar version.
+- Ny funktion = ny vy-del i views.js/stats.js + ev. åtgärd i ACTIONS + ev. datafunktion i data.js. Håll mallarna på läsbara rader.
 - `data/library.json` – grundbiblioteket `{games:[{id,n,igdb,rel,s,r,p,praw,gen,dev,add,url,cov?,cr?,ur?,note?,pl?,cf?}], lists:[{id,name,ids}]}`. Skapas med `python3 tools/import_grouvee.py <export.json>`. Kontouppgifter tas aldrig med (repot är publikt).
 - Lokala ändringar ligger i localStorage `st_patch_v1` `{g:{id:{s,r,p,note,pl,t}}, add:[], del:{}, lists}` ovanpå grundfilen. Robin kan trycka Mer → Kopiera ändringar och klistra in i chatten; Claude kör `python3 tools/merge_patch.py patch.json` (spara inklistrad text som fil först) och committar `data/library.json`. Appen rensar själv bort lokala ändringar som redan finns i grundfilen (`prune()`), så Robin behöver inte slänga något.
 - `dev/test.js` – Playwright-test med skärmdumpar (mobil iPhone 13 + dator 1440×900): `node dev/test.js <utmapp>`.
 
 ## Flöde för en ändring
-1. Ändra `index.html`. 2. Syntaxkolla JS (extrahera `<script>` och `node --check`). 3. `node dev/test.js` och titta på skärmdumparna.
+1. Ändra i `js/` / `style.css`. 2. Syntaxkolla: `for f in js/*.js; do node --check $f; done`. 3. `node dev/test.js` och titta på skärmdumparna.
 4. `./bump.sh`. 5. Commit (svensk text) och `git -c push.negotiate=true push origin HEAD:main`. 6. Berätta vilken version (BUILD) det blev.
 
 ## Faser
