@@ -239,11 +239,11 @@ function playthroughPart(g) {
     <span class="rv mute">${pl.length ? pl.map(x => x.y).join(', ') : 'Inga'} ${ico('chev', 16)}</span></button>`;
   if (!UI.po) return head;
   const years = Array.from({ length: NOWY - 1979 }, (_, k) => NOWY - k).map(v => [v, v]);
-  const outOpts = ['', 'played', 'abandoned'].map(o => [o, OUT[o].label]);
   const row = (x, i) => `<div class="plr">
       <select data-act="ply" data-i="${i}" aria-label="År">${options(years, x.y)}</select>
       ${platSelect(i, x.p || '')}
-      <select data-act="plo" data-i="${i}" aria-label="Utfall">${options(outOpts, x.o || '')}</select>
+      <select data-act="plo" data-i="${i}" aria-label="Utfall">${options([['', x.y < NOWY ? 'Fortsatte' : 'Pågår'],
+        ['played', OUT.played.label], ['abandoned', OUT.abandoned.label]], x.o || '')}</select>
       <button class="plx" data-act="pldel" data-i="${i}" aria-label="Ta bort genomspelningen ${x.y}">${ico('x', 18)}</button>
     </div>`;
   return head + `<div class="pls">${pl.map(row).join('')}

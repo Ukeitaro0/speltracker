@@ -66,6 +66,13 @@ const errors = [];
     const pl = await p.evaluate(id => GM[id].pl, bid);
     if (!pl || pl.length !== 1 || pl[0].y !== yr || pl[0].o !== 'played') errors.push('mobil: genomspelning fel ' + JSON.stringify(pl));
     if (!(await p.evaluate(([id, y]) => LISTS.some(l => l.name === 'played ' + y && l.ids.includes(id)), [bid, yr]))) errors.push('mobil: spelet kom inte med i årslistan');
+    const carried = await p.evaluate(yr => {
+      const g = GAMES.find(x => x.s === 'backlog' && !(x.pl || []).length && x.id !== UI.game);
+      setGame(g.id, { s: 'playing', pl: [{ y: yr - 1, p: null, o: null }] });
+      setStatus(GM[g.id], 'played');
+      return GM[g.id].pl;
+    }, yr);
+    if (carried.length !== 2 || carried[0].o !== null || carried[1].y !== yr || carried[1].o !== 'played') errors.push('mobil: fortsatt genomspelning fel ' + JSON.stringify(carried));
     await p.click('[data-act="po"]');
     await p.screenshot({ path: out + '/m10_genomspelningar.png' });
     await p.selectOption('[data-act="ply"][data-i="0"]', '2025');

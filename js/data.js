@@ -40,7 +40,7 @@ const famOf = id => platInfo(id).fam;
 const platLabel = id => platInfo(id).label;
 const famLabel = id => id === 'other' ? 'Annan' : platInfo(id).label;
 
-// Utfall för en genomspelning ('' = pågår)
+// Utfall för en genomspelning ('' = pågår; på ett tidigare år betyder det "fortsatte året efter")
 const OUT = {
   played: { label: 'Klarat', c: '#8FD3F4' },
   abandoned: { label: 'Gett upp', c: '#F4A9B8' },
@@ -171,7 +171,10 @@ function setStatus(g, s) {
   if (s === 'playing' || s === 'replaying') {
     if (!last || last.o) { pl.push({ y: NOWY, p: g.p || null, o: null }); y = NOWY; }
   } else if (done(s)) {
-    if (last && !last.o) { last.o = s; last.y = NOWY; y = NOWY; }      // avsluta pågående
+    if (last && !last.o && last.y === NOWY) { last.o = s; y = NOWY; }   // avsluta årets pågående
+    else if (last && !last.o) {                                        // började tidigare år: den raden
+      pl.push({ y: NOWY, p: last.p || g.p || null, o: s }); y = NOWY;  // står kvar som "fortsatte"
+    }
     else if (last) last.o = s;                                        // rätta utfallet
     else if (!done(g.s)) {                                            // ingen genomspelning alls
       pl.push({ y: NOWY, p: g.p || null, o: s }); y = NOWY;

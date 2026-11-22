@@ -50,7 +50,9 @@ function hbars(rows) {
 }
 const tile = (value, label, color) => `<div class="tile"><b${color ? ` style="color:${color}"` : ''}>${value}</b><span>${label}</span></div>`;
 const scard = (title, body, small) => `<div class="scard"><h2>${title}${small ? ` <small>${small}</small>` : ''}</h2>${body}</div>`;
-const outcomeParts = (k, u, o) => [['Klarat', k, OUT.played.c], ['Gett upp', u, OUT.abandoned.c], ['Pågår / annat', o, OUT[''].c]];
+const openLabel = y => y < NOWY ? 'Fortsatte' : 'Pågår';   // ej avslutad det året
+const outcomeParts = (k, u, o, label = 'Pågår / fortsatte') =>
+  [['Klarat', k, OUT.played.c], ['Gett upp', u, OUT.abandoned.c], [label, o, OUT[''].c]];
 
 // ---------- Översikt ----------
 function yearColumns(Y) {
@@ -138,7 +140,7 @@ function yearBody(y) {
       ${tile(avgRating(gs) + ' ★', 'snittbetyg', 'var(--star)')}
       ${tile(gs.filter(g => g.r === 5).length, 'femstjärniga', OUT.played.c)}
     </div>
-    ${scard('Completion rate', stackWithLegend(outcomeParts(k, u, E.length - k - u)), `${k} av ${k + u} avgjorda`)}
+    ${scard('Completion rate', stackWithLegend(outcomeParts(k, u, E.length - k - u, openLabel(y))), `${k} av ${k + u} avgjorda`)}
     ${top.length ? scard('Årets topp 3', top3(top), L ? 'från listan ' + esc(L.name) : 'efter ditt betyg') : ''}
     ${scard('Nya eller äldre', stackWithLegend([['Från ' + y, same, '#B5E3C8'], ['Äldre', older, '#5E8F7C']])
       + (oldest ? `<span class="mute" style="font-size:13px">Äldst: ${esc(oldest.n)} (${year(oldest)})</span>` : ''))}
@@ -146,7 +148,7 @@ function yearBody(y) {
     ${genres.length ? scard('Mest spelade genrer',
       `<div class="gch">${genres.map(([n, c]) => `<span>${esc(genreName(n))} <i>${c}</i></span>`).join('')}</div>`) : ''}
     <div class="scard plain"><h2>Alla spel ${y}</h2>
-      ${miniGrid(E.map(x => ({ g: x.g, dot: OUT[x.o].c, label: OUT[x.o].label })))}</div>
+      ${miniGrid(E.map(x => ({ g: x.g, dot: OUT[x.o].c, label: x.o ? OUT[x.o].label : openLabel(y) })))}</div>
     ${waiting.length ? `<div class="scard plain"><h2>Släppt ${y} – ligger kvar <small>${waiting.length} på Backlog/Wishlist</small></h2>
       ${miniGrid(waiting.map(g => ({ g, dot: SM[g.s].c, label: SM[g.s].label })))}
       ${legend([['Backlog', '', SM.backlog.c], ['Wishlist', '', SM.wishlist.c]])}</div>` : ''}
