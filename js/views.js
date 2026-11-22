@@ -120,6 +120,8 @@ function renderSub(c) {
   else if (c.list && UI.reorder === c.list.id)
     el.innerHTML = `Dra i <span style="display:inline-flex;vertical-align:middle">${ico('grip', 16)}</span> för att flytta
       ${link('reorderdone', 'Klar', 'font-weight:600')}`;
+  else if (c.fixed)
+    el.innerHTML = `${c.fixed === 'serie' ? 'Serie' : 'Utvecklare'} · ${c.arr.length} spel · utgivningsordning`;
   else if (c.list)
     el.innerHTML = `${c.arr.length} spel · listordning
       ${link('reorder', 'Ändra ordning')}${link('renamelist', 'Byt namn')}${link('dellist', 'Ta bort lista')}`;
@@ -284,14 +286,18 @@ function renderGame() {
   el.className = g ? 'open' : '';
   if (!g) { el.innerHTML = ''; return; }
   const s = SM[g.s] || SM.backlog;
-  const sub = [year(g), (g.dev || [])[0]].filter(Boolean).join(' · ');
+  // Utvecklare och serier är länkar till biblioteket filtrerat på dem.
+  const devs = (g.dev || []).slice(0, 2).map(d => `<button class="lnk2" data-act="dev" data-v="${esc(d)}">${esc(d)}</button>`);
+  const sub = [year(g) && esc(year(g))].concat(devs.length ? [devs.join(', ')] : []).filter(Boolean).join(' · ');
+  const series = gameSeries(g).map(s => `<button class="serie" data-act="ser" data-v="${esc(s)}">
+      ${ico('lists', 14)}<span>${esc(s)}</span><i>${SERIES[s]} spel</i></button>`).join('');
   const sep = '<div class="sep"></div>';
   el.innerHTML = `<div class="backdrop" data-act="close"></div>
   <div class="gp" style="--tint:${rgba(s.c, 0.16)}">
     <div class="gtop"><button class="icon" data-act="close" aria-label="Tillbaka">${ico('back', 24)}</button></div>
     <div class="ghero">
       ${g.cov ? `<button class="cbtn" data-act="big" aria-label="Visa omslaget stort">${cover(g)}</button>` : cover(g, `<span class="ct">${esc(g.n)}</span>`)}
-      <div><h1>${esc(g.n)}</h1><span class="mute">${esc(sub)}</span></div>
+      <div class="gt"><h1>${esc(g.n)}</h1><span class="mute">${sub}</span>${series}</div>
     </div>
     <div class="box">
       ${statusPart(g, s)}${sep}${ratingPart(g)}${sep}${platformPart(g)}${sep}

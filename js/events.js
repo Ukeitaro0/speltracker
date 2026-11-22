@@ -28,6 +28,16 @@ function goTab(tab) {
   render();
   scrollTo(0, 0);
 }
+function showFiltered(f) {
+  setView({ f });
+  UI.reorder = null;
+  UI.q = '';
+  UI.tab = 'lib';
+  UI.sheet = false;
+  closeGame();
+  render();
+  scrollTo(0, 0);
+}
 const toggleGamePart = key => () => { UI[key] = !UI[key]; renderGame(); };
 
 const ACTIONS = {
@@ -42,6 +52,9 @@ const ACTIONS = {
     if (UI.tab === 'search') { const q = $('#q'); if (q) q.focus(); }
   },
   year: b => { UI.year = +b.dataset.y; render(); scrollTo(0, 0); },
+  // Från spelkortet: visa alla spel i samma serie / av samma utvecklare.
+  ser: b => showFiltered('ser:' + b.dataset.v),
+  dev: b => showFiltered('dev:' + b.dataset.v),
   yback: () => { UI.year = null; render(); scrollTo(0, 0); },
 
   // Spelkortet

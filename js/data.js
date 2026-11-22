@@ -83,7 +83,7 @@ const UI = {                       // tillfälligt läge i gränssnittet
   so: false, lo: false, oo: false, po: false,   // öppna delar på spelkortet
   reorder: null, year: null, big: false
 };
-let GAMES = [], GM = {}, LISTS = [];
+let GAMES = [], GM = {}, LISTS = [], SERIES = {};   // SERIES = {serienamn: antal spel i biblioteket}
 
 function setView(o) { Object.assign(V, o); lsSet('st_view_v1', V); }
 
@@ -127,6 +127,8 @@ function rebuild() {
   GM = {};
   GAMES.forEach(g => { GM[g.id] = g; });
   LISTS = (PATCH.lists || BASE.lists).map(l => ({ id: l.id, name: l.name, ids: l.ids.filter(id => GM[id]) }));
+  SERIES = {};
+  GAMES.forEach(g => (g.ser || []).forEach(s => { SERIES[s] = (SERIES[s] || 0) + 1; }));
 }
 
 function save() { lsSet('st_patch_v1', PATCH); rebuild(); render(); }
@@ -224,10 +226,24 @@ function current() {
     const l = LISTS.find(x => x.id === f.slice(2));
     if (l) return { arr: l.ids.map(id => GM[id]), title: l.name, list: l };
   }
+  // Serie (IGDB collection) eller utvecklare: alla spel i biblioteket, i utgivningsordning.
+  const byRel = arr => arr.slice().sort((a, b) => (a.rel || '9').localeCompare(b.rel || '9') || cmpName(a, b));
+  if (f.startsWith('ser:')) return { arr: byRel(GAMES.filter(g => (g.ser || []).includes(f.slice(4)))), title: f.slice(4), fixed: 'serie' };
+  if (f.startsWith('dev:')) return { arr: byRel(GAMES.filter(g => (g.dev || []).includes(f.slice(4)))), title: f.slice(4), fixed: 'utvecklare' };
   if (f === 'noplat') return { arr: sortGames(GAMES.filter(g => !g.p)), title: 'Saknar plattform' };
   if (f === 'cf') return { arr: sortGames(GAMES.filter(g => g.cf)), title: 'Kolla status' };
   if (f !== 'all') setView({ f: 'all' });
   return { arr: sortGames(GAMES), title: 'Alla spel' };
+}
+// Serier att visa på spelkortet: bara de med minst två spel hos Robin, största först, högst två.
+// Serier som innehåller exakt samma spel hos Robin visas bara en gång (den med kortast namn).
+function gameSeries(g) {
+  const key = s => GAMES.filter(x => (x.ser || []).includes(s)).map(x => x.id).join();
+  const seen = new Set();
+  return (g.ser || []).filter(s => SERIES[s] > 1)
+    .sort((a, b) => SERIES[b] - SERIES[a] || a.length - b.length || a.localeCompare(b))
+    .filter(s => { const k = key(s); if (seen.has(k)) return false; seen.add(k); return true; })
+    .slice(0, 2);
 }
 function searchHits(q) {
   const n = norm(q);

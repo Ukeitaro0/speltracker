@@ -27,6 +27,7 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 - **Stort omslag (2026-11-22):** tryck på omslaget på spelkortet → IGDB `t_1080p` över mörk bakgrund, tryck/Esc stänger.
 - **Släppt ÅÅÅÅ – ligger kvar (2026-11-22):** sist i årsvyn, spel utgivna det året med status Backlog/Wishlist som inte spelats det året.
 - **Listordning:** "Ändra ordning" i listvyn → en rad per spel, dra i handtaget (pointer events). År kan ändras för hand under Genomspelningar. played-listorna konverteras en gång (utfall = spelets status).
+- **Serier och utvecklare (2026-11-22):** `ser` = IGDB collections (hämtas med `tools/fetch_covers.py`). På spelkortet: utvecklare (högst 2) som länkar under titeln + upp till två serieknappar (bara serier med ≥2 spel hos Robin, största först, dubbletter med samma spel visas en gång). Tryck → biblioteket filtrerat (`V.f = ser:<namn>` / `dev:<namn>`), i utgivningsordning. Utvecklarnamn från Grouvee, inte sammanslagna (Capcom ≠ Capcom Development Division 1).
 - **Notering:** kort fritext per spel (`note`, max 500 tecken), fält under Plattform på spelkortet. Sparas när fältet lämnas.
 - **Speldata:** IGDB (Twitch). Kräver server pga hemlig nyckel + CORS → anrop går via Workern. Speldata (namn, omslag, år, plattformar) sparas i vår databas när spelet läggs till, så appen inte beror på IGDB för visning.
 - **Backend:** Cloudflare Worker + D1 (gratisnivå). Valt före Supabase eftersom Supabase gratis pausar projekt efter 7 dagars inaktivitet.
@@ -43,7 +44,7 @@ Läs hela filen innan du gör något. Den sammanfattar besluten (start nov 2026)
 - `js/events.js` – `ACTIONS`-tabellen: knappar har `data-act="namn"` → `ACTIONS[namn](knapp, spel)`. Plus change/input, dra-för-att-flytta.
 - `js/start.js` – laddar library.json och kollar version.
 - Ny funktion = ny vy-del i views.js/stats.js + ev. åtgärd i ACTIONS + ev. datafunktion i data.js. Håll mallarna på läsbara rader.
-- `data/library.json` – grundbiblioteket `{games:[{id,n,igdb,rel,s,r,p,praw,gen,dev,add,url,cov?,cr?,ur?,note?,pl?,cf?}], lists:[{id,name,ids}]}`. Skapas med `python3 tools/import_grouvee.py <export.json>`. Kontouppgifter tas aldrig med (repot är publikt).
+- `data/library.json` – grundbiblioteket `{games:[{id,n,igdb,rel,s,r,p,praw,gen,dev,add,url,cov?,cr?,ur?,ser?,note?,pl?,cf?}], lists:[{id,name,ids}]}`. Skapas med `python3 tools/import_grouvee.py <export.json>`. Kontouppgifter tas aldrig med (repot är publikt).
 - Lokala ändringar ligger i localStorage `st_patch_v1` `{g:{id:{s,r,p,note,pl,t}}, add:[], del:{}, lists}` ovanpå grundfilen. Robin kan trycka Mer → Kopiera ändringar och klistra in i chatten; Claude kör `python3 tools/merge_patch.py patch.json` (spara inklistrad text som fil först) och committar `data/library.json`. Appen rensar själv bort lokala ändringar som redan finns i grundfilen (`prune()`), så Robin behöver inte slänga något.
 - `dev/test.js` – Playwright-test med skärmdumpar (mobil iPhone 13 + dator 1440×900): `node dev/test.js <utmapp>`.
 

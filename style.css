@@ -181,6 +181,12 @@ svg{flex-shrink:0}
 .bigc{position:absolute;inset:0;z-index:5;width:100%;background:rgba(6,10,9,.94);display:flex;align-items:center;justify-content:center;padding:calc(20px + var(--st)) 20px calc(20px + var(--sb));cursor:zoom-out;animation:fade .15s ease-out}
 .bigc img{max-width:100%;max-height:100%;aspect-ratio:3/4;object-fit:contain;border-radius:20px;background:center/cover no-repeat;box-shadow:0 30px 80px rgba(0,0,0,.6)}
 @keyframes fade{from{opacity:0}to{opacity:1}}
+.gt{display:flex;flex-direction:column;align-items:flex-start;min-width:0}
+.lnk2{color:var(--mute);font-size:inherit;text-decoration:underline;text-decoration-color:var(--staroff);text-underline-offset:3px;text-align:left}
+.serie{display:flex;align-items:center;gap:6px;margin-top:10px;min-height:32px;padding:0 12px;border-radius:16px;background:rgba(255,255,255,.07);font-size:13px;text-align:left;max-width:100%}
+.serie span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.serie i{font-style:normal;color:var(--mute);white-space:nowrap}
+.serie+.serie{margin-top:6px}
 .scard.plain{background:none;padding:0}
 .scard.plain h2{padding:0 4px}
 .yback{margin-left:-12px}

@@ -71,6 +71,17 @@ const errors = [];
     await p.selectOption('[data-act="ply"][data-i="0"]', '2025');
     if ((await p.evaluate(id => GM[id].pl[0].y, bid)) !== 2025) errors.push('mobil: år gick inte att ändra');
     await p.click('[data-act="close"].icon');
+    // Serie och utvecklare
+    const mid = await p.evaluate(() => GAMES.find(g => /Man of Medan/.test(g.n)).id);
+    await p.evaluate(id => openGame(id), mid); await p.waitForSelector('#game.open');
+    await p.screenshot({ path: out + '/m14_serie_spelkort.png' });
+    await p.click('[data-act="ser"]');
+    await p.waitForTimeout(300);
+    await p.screenshot({ path: out + '/m15_serie.png' });
+    if (!(await p.evaluate(() => current().arr.length >= 2 && !UI.game))) errors.push('mobil: seriefiltret fungerade inte');
+    await p.evaluate(id => openGame(id), mid); await p.waitForSelector('#game.open');
+    await p.click('[data-act="dev"]'); await p.waitForTimeout(300);
+    if (!(await p.evaluate(() => V.f.startsWith('dev:') && current().arr.length >= 5))) errors.push('mobil: utvecklarfiltret fungerade inte');
     // Statistik
     await p.click('#tabs [data-tab="stats"]');
     await p.screenshot({ path: out + '/m11_statistik.png', fullPage: true });
