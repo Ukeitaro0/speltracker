@@ -187,6 +187,12 @@ svg{flex-shrink:0}
 .serie span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .serie i{font-style:normal;color:var(--mute);white-space:nowrap}
 .serie+.serie{margin-top:6px}
+.ror .rt b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.ror .rt small{display:block;color:var(--mute);font-size:12px;margin-top:2px;overflow:hidden;text-overflow:ellipsis}
+.ror .rt{text-align:left}
+button.ror{width:100%}
+.igb{display:flex;align-items:center;gap:6px;flex-shrink:0;min-height:40px;padding:0 12px;margin-right:6px;border-radius:20px;background:var(--acc);color:var(--bg);font-size:13px;font-weight:600}
+.igb.have{background:var(--surf2);color:var(--text);font-weight:500}
 .scard.plain{background:none;padding:0}
 .scard.plain h2{padding:0 4px}
 .lhead .back{margin-left:-12px;margin-right:-6px;flex-shrink:0}

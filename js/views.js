@@ -131,11 +131,24 @@ function renderSub(c) {
 // ---------- Innehåll per flik ----------
 const grid = gs => `<div class="grid">${gs.join('')}</div>`;
 
+// Sökfliken: först träffar i biblioteket, sedan från IGDB (igdb.js). På datorns bibliotekssök bara biblioteket.
 function searchBody() {
-  if (!UI.q) return `<div class="empty">Sök bland dina ${GAMES.length} spel.<br>Sökning i IGDB (med omslag) kommer när nyckeln är på plats.</div>`;
-  const hits = searchHits(UI.q);
-  return (hits.length ? grid(hits.map(g => card(g))) : `<div class="empty">Inget spel i biblioteket heter så.</div>`)
+  if (!UI.q) return `<div class="empty">Sök bland dina ${GAMES.length} spel och i IGDB för att lägga till nya.</div>`;
+  const hits = searchHits(UI.q), withIgdb = UI.tab === 'search';
+  const lib = !hits.length ? (withIgdb ? '' : `<div class="empty">Inget spel i biblioteket heter så.</div>`)
+    : withIgdb ? '<div class="sect" style="padding-left:4px">I biblioteket</div>' + gameRows(hits.slice(0, 8))
+    : grid(hits.map(g => card(g)));
+  return lib + (withIgdb ? igdbResults() : '')
     + `<button class="manual" data-act="addman">Lägg till ”${esc(UI.q)}” för hand</button>`;
+}
+// Kompakta rader (sökfliken): omslag, namn, år/utvecklare och status. Tryck öppnar spelet.
+function gameRows(gs) {
+  return `<div class="ro">${gs.map(g => `
+    <button class="ror" data-act="game" data-id="${g.id}">
+      <span class="rc" style="background:${coverColor(g)}">${g.cov ? `<img src="${IGDB_IMG}t_cover_small/${g.cov}.jpg" alt="" loading="lazy">` : ''}</span>
+      <span class="rt"><b>${esc(g.n)}</b><small>${[year(g), (g.dev || [])[0]].filter(Boolean).map(esc).join(' · ')}</small></span>
+      <span class="igb have"><span class="dot" style="background:${SM[g.s].c}"></span>${SM[g.s].label}</span>
+    </button>`).join('')}</div>`;
 }
 function reorderBody(c) {
   return `<div class="ro" id="ro">${c.arr.map((g, i) => `

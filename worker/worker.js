@@ -6,7 +6,7 @@
 // GET /games?ids=1,2,3    → samma uppgifter för kända IGDB-id (max 500 per anrop)
 
 const ALLOWED = ['https://ukeitaro0.github.io'];
-const FIELDS = 'fields name,first_release_date,cover.image_id,platforms.abbreviation,genres.name,involved_companies.company.name,involved_companies.developer;';
+const FIELDS = 'fields name,first_release_date,cover.image_id,platforms.abbreviation,genres.name,involved_companies.company.name,involved_companies.developer,aggregated_rating,rating,collections.name;';
 
 let tok = null, tokExp = 0;
 

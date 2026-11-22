@@ -122,6 +122,7 @@ const ACTIONS = {
   reorderdone: () => { UI.reorder = null; renderBody(); },
 
   // Sök och Mer
+  igadd: b => addFromIgdb(+b.dataset.i),
   addman: () => {
     const name = UI.q.trim();
     if (!name) return;
@@ -184,7 +185,11 @@ document.addEventListener('change', e => {
   }
 });
 document.addEventListener('input', e => {
-  if (e.target.id === 'q') { UI.q = e.target.value; renderBody(); }
+  if (e.target.id === 'q') {
+    UI.q = e.target.value;
+    if (UI.tab === 'search') igdbSearch(UI.q);
+    renderBody();
+  }
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;

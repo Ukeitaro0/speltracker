@@ -53,6 +53,22 @@ const errors = [];
     await p.screenshot({ path: out + '/m6_listor.png' });
     await p.click('#mbody [data-f="l:l11"]');
     await p.screenshot({ path: out + '/m7_topp25.png' });
+    // Sök i IGDB (servern låtsas: svaret kommer härifrån)
+    await p.route('https://speltracker.ukeitaro.workers.dev/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify([
+      { id: 999999, name: 'Testspel: Nytt', first_release_date: 1700000000, cover: { image_id: 'co39s8' }, platforms: [{ abbreviation: 'PS5' }, { abbreviation: 'PC' }],
+        genres: [{ name: 'Adventure' }], involved_companies: [{ developer: true, company: { name: 'Testbolag' } }], aggregated_rating: 81.4, collections: [{ name: 'Testserie' }] },
+      { id: 55047, name: 'The Dark Pictures Anthology: Man of Medan', first_release_date: 1567036800 }
+    ]) }));
+    await p.click('#tabs [data-tab="search"]'); await p.fill('#q', 'dark pictures');
+    await p.waitForSelector('[data-act="igadd"]');
+    await p.screenshot({ path: out + '/m16_igdb_sok.png' });
+    if (await p.$('[data-act="igadd"][data-i="55047"]')) errors.push('mobil: spel som redan finns erbjöds att läggas till');
+    await p.click('[data-act="igadd"][data-i="999999"]'); await p.waitForSelector('#game.open .opts');
+    const ng = await p.evaluate(() => GM['g999999']);
+    if (!ng || ng.dev[0] !== 'Testbolag' || ng.cr !== 81 || ng.cov !== 'co39s8' || ng.rel !== '2023-11-14') errors.push('mobil: tillagt IGDB-spel fel ' + JSON.stringify(ng));
+    await p.screenshot({ path: out + '/m17_igdb_tillagd.png' });
+    await p.click('[data-act="status"][data-s="wishlist"]');
+    await p.click('[data-act="close"].icon');
     await p.click('#tabs [data-tab="search"]'); await p.fill('#q', 'final fantasy');
     await p.screenshot({ path: out + '/m8_sok.png' });
     await p.click('#tabs [data-tab="more"]');
