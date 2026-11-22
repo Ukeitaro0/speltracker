@@ -25,6 +25,11 @@ def main(src, dst='data/library.json'):
             g.pop('note')
         if g.get('pl') == []:
             g.pop('pl')
+        # Plattform satt utan genomspelningar i patchen (äldre appversion): fyll i där plattform saknas.
+        if f.get('p') and 'pl' not in f:
+            for x in g.get('pl') or []:
+                if not x.get('p'):
+                    x['p'] = f['p']; changed += 1
         if 's' in f:
             g.pop('cf', None)
     for a in patch.get('add') or []:
