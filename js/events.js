@@ -53,7 +53,8 @@ const ACTIONS = {
   bigclose: toggleGamePart('big'),
   status: (b, g) => { UI.so = false; if (b.dataset.s !== g.s) setStatus(g, b.dataset.s); else renderGame(); },
   rate: (b, g) => { const n = +b.dataset.n; setGame(g.id, { r: n === g.r ? 0 : n }); },
-  plat: (b, g) => setPlatform(g, g.p === b.dataset.p ? null : b.dataset.p),
+  plat: (b, g) => setPlatform(g, g.p && famOf(g.p) === b.dataset.p ? null : b.dataset.p),     // familj
+  platm: (b, g) => setPlatform(g, g.p === b.dataset.p ? famOf(b.dataset.p) : b.dataset.p),    // modell
   pladd: (b, g) => {
     const pl = plCopy(g);
     pl.push({ y: NOWY, p: g.p || null, o: 'played' });

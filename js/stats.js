@@ -4,7 +4,12 @@
 
 const PLAT_COLORS = ['#B5E3C8', '#7FB89C', '#5E8F7C', '#9DB0A8', '#4E6B60'];
 const genreName = n => n.replace('Role-playing (RPG)', 'RPG').replace(/^Platform$/, 'Plattform');
-const platName = id => id === 'other' ? 'Annan' : platLabel(id);
+const famsOf = g => [...new Set(plats(g).map(famOf))];
+// "PS5 8 · PS4 3" – modeller (inte bara familj) bland plattforms-id:n
+function modelLine(ids) {
+  const m = tally(ids.filter(p => p && p !== famOf(p)));
+  return m.length ? `<span class="mute" style="font-size:13px">${m.map(([p, n]) => esc(platLabel(p)) + ' ' + n).join(' · ')}</span>` : '';
+}
 
 // { år: { spelId: {g, o: utfall ('' = pågår), p: plattform} } }
 function yearMap() {
@@ -71,7 +76,7 @@ function yearColumns(Y) {
 function statsBody() {
   const k = GAMES.filter(g => g.s === 'played').length, u = GAMES.filter(g => g.s === 'abandoned').length;
   const status = ST.map(s => [s.label, GAMES.filter(g => g.s === s.id).length, s.c]).sort((a, b) => b[1] - a[1]);
-  const platRows = tally([].concat(...GAMES.map(plats))).map(([p, n]) => [platName(p), n]);
+  const platRows = tally([].concat(...GAMES.map(famsOf))).map(([f, n]) => [famLabel(f), n]);
   const noPlat = GAMES.filter(g => !plats(g).length).length;
   const genres = tally([].concat(...GAMES.map(g => g.gen || []))).slice(0, 6).map(([n, c]) => [genreName(n), c]);
   return `<div class="stats">
@@ -116,7 +121,7 @@ function yearBody(y) {
   const relYears = gs.map(g => +year(g) || 0);
   const same = relYears.filter(r => r === y).length, older = relYears.filter(r => r && r < y).length;
   const oldest = gs.filter(g => +year(g)).sort((a, b) => (a.rel || '').localeCompare(b.rel || ''))[0];
-  const platParts = tally(E.map(x => x.p)).map(([p, n], i) => [platName(p), n, PLAT_COLORS[i % PLAT_COLORS.length]]);
+  const platParts = tally(E.map(x => x.p && famOf(x.p))).map(([f, n], i) => [famLabel(f), n, PLAT_COLORS[i % PLAT_COLORS.length]]);
   const noPlat = E.filter(x => !x.p).length;
   if (noPlat) platParts.push(['Okänd', noPlat, '#33423C']);
   const genres = tally([].concat(...gs.map(g => g.gen || []))).slice(0, 4);
@@ -137,7 +142,7 @@ function yearBody(y) {
     ${top.length ? scard('Årets topp 3', top3(top), L ? 'från listan ' + esc(L.name) : 'efter ditt betyg') : ''}
     ${scard('Nya eller äldre', stackWithLegend([['Från ' + y, same, '#B5E3C8'], ['Äldre', older, '#5E8F7C']])
       + (oldest ? `<span class="mute" style="font-size:13px">Äldst: ${esc(oldest.n)} (${year(oldest)})</span>` : ''))}
-    ${scard('Plattform', stackWithLegend(platParts))}
+    ${scard('Plattform', stackWithLegend(platParts) + modelLine(E.map(x => x.p)))}
     ${genres.length ? scard('Mest spelade genrer',
       `<div class="gch">${genres.map(([n, c]) => `<span>${esc(genreName(n))} <i>${c}</i></span>`).join('')}</div>`) : ''}
     <div class="scard plain"><h2>Alla spel ${y}</h2>

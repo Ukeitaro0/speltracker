@@ -35,7 +35,7 @@ function card(g, rank) {
     <span class="nm">${esc(g.n)}</span>
     <span class="meta">
       <span class="stars"${g.r ? ` title="${RATE[g.r]}"` : ''}>${stars(g.r)}</span>
-      <span class="mr">${critic}${plats(g).slice(0, 3).map(x => ico(x, 16)).join('')}</span>
+      <span class="mr">${critic}${[...new Set(plats(g).map(p => platInfo(p).icon))].slice(0, 3).map(x => ico(x, 16)).join('')}</span>
     </span>
   </button>`;
 }
@@ -209,14 +209,28 @@ function ratingPart(g) {
     <span class="rl">Betyg<small>${g.r ? RATE[g.r] : 'Inget betyg än'}</small>${ext ? `<small class="ext">${ext}</small>` : ''}</span>
     <span class="sbig">${starBtns}</span></div>`;
 }
+// Familjeknappar + (om vald familj har modeller) en rad med modeller under.
 function platformPart(g) {
-  const all = plats(g);
-  const btn = p => {
-    const on = g.p === p.id, was = !on && all.includes(p.id);   // was = spelat där tidigare
-    return `<button data-act="plat" data-p="${p.id}" aria-label="${p.label}" aria-pressed="${on}"
-      class="${on ? 'on' : was ? 'was' : ''}"${was ? ' title="Spelat tidigare"' : ''}>${ico(p.id, 20)}</button>`;
+  const cur = g.p ? famOf(g.p) : null, earlier = plats(g).map(famOf);
+  const fams = FAMS.concat(cur === 'other' ? [{ id: 'other', label: 'Annan plattform', models: [] }] : []);
+  const btn = f => {
+    const on = cur === f.id, was = !on && earlier.includes(f.id);   // was = spelat där tidigare
+    return `<button data-act="plat" data-p="${f.id}" aria-label="${f.label}" aria-pressed="${on}"
+      class="${on ? 'on' : was ? 'was' : ''}"${was ? ' title="Spelat tidigare"' : ''}>${ico(f.id, 20)}</button>`;
   };
-  return `<div class="row"><span>Plattform</span><span class="plats">${PLAT.map(btn).join('')}</span></div>`;
+  const fam = FAMS.find(f => f.id === cur);
+  const models = fam && fam.models.length ? `<div class="pmods">${fam.models.map(([id, short]) =>
+    `<button class="chip${g.p === id ? ' on' : ''}" data-act="platm" data-p="${id}">${short}</button>`).join('')}</div>` : '';
+  return `<div class="row"><span>Plattform</span><span class="plats">${fams.map(btn).join('')}</span></div>${models}`;
+}
+// Rullgardin med familjer och modeller i grupper.
+function platSelect(i, value) {
+  const opt = (id, label) => `<option value="${id}"${attr(id === value, 'selected')}>${label}</option>`;
+  const extra = value && !PLATS[value] || value === 'other' ? opt(value, platLabel(value)) : '';
+  return `<select data-act="plp" data-i="${i}" aria-label="Plattform">${opt('', '–')}${extra}
+    ${FAMS.map(f => f.models.length
+      ? `<optgroup label="${f.label}">${opt(f.id, f.label + ' (okänd)')}${f.models.map(([id]) => opt(id, platLabel(id))).join('')}</optgroup>`
+      : opt(f.id, f.label)).join('')}</select>`;
 }
 function playthroughPart(g) {
   const pl = g.pl || [];
@@ -224,11 +238,10 @@ function playthroughPart(g) {
     <span class="rv mute">${pl.length ? pl.map(x => x.y).join(', ') : 'Inga'} ${ico('chev', 16)}</span></button>`;
   if (!UI.po) return head;
   const years = Array.from({ length: NOWY - 1979 }, (_, k) => NOWY - k).map(v => [v, v]);
-  const platOpts = [['', '–']].concat(PLAT.map(p => [p.id, p.short]));
   const outOpts = ['', 'played', 'abandoned'].map(o => [o, OUT[o].label]);
   const row = (x, i) => `<div class="plr">
       <select data-act="ply" data-i="${i}" aria-label="År">${options(years, x.y)}</select>
-      <select data-act="plp" data-i="${i}" aria-label="Plattform">${options(platOpts, x.p || '')}</select>
+      ${platSelect(i, x.p || '')}
       <select data-act="plo" data-i="${i}" aria-label="Utfall">${options(outOpts, x.o || '')}</select>
       <button class="plx" data-act="pldel" data-i="${i}" aria-label="Ta bort genomspelningen ${x.y}">${ico('x', 18)}</button>
     </div>`;

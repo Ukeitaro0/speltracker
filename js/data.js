@@ -18,14 +18,27 @@ const ST = [
 ];
 const SM = Object.fromEntries(ST.map(s => [s.id, s]));
 
-const PLAT = [
-  { id: 'steam', label: 'Steam', short: 'Steam' },
-  { id: 'ps', label: 'PlayStation', short: 'PS' },
-  { id: 'xbox', label: 'Xbox', short: 'Xbox' },
-  { id: 'ios', label: 'iOS', short: 'iOS' },
-  { id: 'other', label: 'Annan plattform', short: 'Annan' }
+// Plattformar: familj (ikon på spelkortet) + valfri modell. g.p och pl[].p är antingen ett familje-id
+// (modell okänd) eller ett modell-id. 'other' är äldre data ("Annan plattform") och visas bara om den används.
+const FAMS = [
+  { id: 'pc', label: 'PC', models: [['steam', 'Steam'], ['pco', 'Annan']] },
+  { id: 'ps', label: 'PlayStation', models: [['ps1', 'PS1'], ['ps2', 'PS2'], ['ps3', 'PS3'], ['ps4', 'PS4'], ['ps5', 'PS5']] },
+  { id: 'xbox', label: 'Xbox', models: [['xb', 'Xbox'], ['x360', 'Xbox 360'], ['xsx', 'Series X']] },
+  { id: 'nin', label: 'Nintendo', models: [['nes', 'NES'], ['snes', 'SNES'], ['n64', 'N64'], ['nino', 'Annan']] },
+  { id: 'ios', label: 'iOS', models: [] }
 ];
-const platLabel = id => (PLAT.find(p => p.id === id) || {}).label || id;
+const PLATS = { other: { id: 'other', fam: 'other', label: 'Annan plattform', short: 'Annan', icon: 'other' } };
+FAMS.forEach(f => {
+  PLATS[f.id] = { id: f.id, fam: f.id, label: f.label, short: f.label, icon: f.id };
+  f.models.forEach(([id, short]) => {
+    PLATS[id] = { id, fam: f.id, short, icon: id === 'steam' ? 'steam' : f.id,
+      label: short === 'Annan' ? f.label + ' (annan)' : short };
+  });
+});
+const platInfo = id => PLATS[id] || { id, fam: id, label: id, short: id, icon: 'other' };
+const famOf = id => platInfo(id).fam;
+const platLabel = id => platInfo(id).label;
+const famLabel = id => id === 'other' ? 'Annan' : platInfo(id).label;
 
 // Utfall för en genomspelning ('' = pågår)
 const OUT = {
@@ -79,12 +92,22 @@ const PATCH_KEYS = ['s', 'r', 'p', 'note', 'pl'];
 const EMPTY = { note: '', pl: [] };
 
 // Tar bort lokala ändringar som redan finns i grundfilen (efter att Claude slagit ihop dem).
+// Lokala ändringar gjorda före konsolmodellerna (22 nov 2026) har bara familj ('ps'/'xbox'). Om grundfilen
+// sedan fått en modell i samma familj vinner modellen.
+const MODELS_T = Date.UTC(2026, 10, 22, 9, 0);
+function upgradeOldPlatform(f, b) {
+  if (!(f.t < MODELS_T) || !b.p) return;
+  const fits = p => p && p === famOf(p) && famOf(b.p) === p;
+  if (fits(f.p)) f.p = b.p;
+  (f.pl || []).forEach(x => { if (fits(x.p)) x.p = b.p; });
+}
 function prune() {
   const pg = PATCH.g || {};
   let n = 0;
   BASE.games.forEach(b => {
     const f = pg[b.id];
     if (!f) return;
+    upgradeOldPlatform(f, b);
     PATCH_KEYS.forEach(k => {
       const base = b[k] === undefined ? (k in EMPTY ? EMPTY[k] : null) : b[k];
       if (k in f && JSON.stringify(f[k]) === JSON.stringify(base)) { delete f[k]; n++; }
@@ -158,19 +181,22 @@ function setStatus(g, s) {
   if (msg) toast(msg);
 }
 
-// Plattformsval gäller senaste genomspelningen om den pågår, är från i år eller saknar plattform.
+// Plattformsval gäller senaste genomspelningen om den pågår, är från i år, saknar plattform
+// eller bara har familjen och nu får en modell i samma familj.
 function setPlatform(g, p) {
   const f = { p }, pl = plCopy(g), last = pl[pl.length - 1];
-  if (last && (!last.o || last.y === NOWY || !last.p)) { last.p = p; f.pl = pl; }
+  const refine = last && p && last.p === famOf(last.p) && famOf(p) === last.p;
+  if (last && (!last.o || last.y === NOWY || !last.p || refine)) { last.p = p; f.pl = pl; }
   setGame(g.id, f);
 }
 
-// Alla plattformar spelet spelats på: aktuell först, sedan tidigare genomspelningar.
+// Alla plattformar (id) spelet spelats på: aktuell först, sedan tidigare genomspelningar.
+// En familj utan modell räknas inte om samma familj finns med modell.
 function plats(g) {
   const a = [];
   [g.p].concat((g.pl || []).slice().reverse().map(x => x.p))
     .forEach(p => { if (p && !a.includes(p)) a.push(p); });
-  return a;
+  return a.filter(p => !(p === famOf(p) && a.some(q => q !== p && famOf(q) === p)));
 }
 
 // ---------- Urval och sortering ----------

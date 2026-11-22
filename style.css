@@ -118,6 +118,8 @@ svg{flex-shrink:0}
 .danger{margin:0 16px 16px;min-height:44px;border-radius:14px;color:#F4A9B8;background:rgba(244,169,184,.08);font-size:14px}
 
 .plats button.was{box-shadow:inset 0 0 0 2px var(--acc);color:var(--acc)}
+.pmods{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;padding:0 12px 14px}
+.pmods .chip{min-height:36px;padding:0 12px}
 .pls{display:flex;flex-direction:column;gap:8px;padding:0 12px 14px}
 .plr{display:grid;grid-template-columns:76px minmax(0,1fr) minmax(0,1fr) 40px;gap:6px;align-items:center}
 .plr select{appearance:none;-webkit-appearance:none;min-width:0;width:100%;min-height:42px;border:none;border-radius:14px;background:var(--surf2);color:var(--text);font-size:16px;padding:0 10px}
