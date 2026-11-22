@@ -183,13 +183,20 @@ function moreBody() {
       ${row('filter', 'Saknar plattform', GAMES.filter(g => !g.p).length, ' data-f="noplat"')}
       ${row('filter', 'Kolla status (låg på flera hyllor i Grouvee)', GAMES.filter(g => g.cf).length, ' data-f="cf"')}
     </div>
-    <div class="sect">Ändringar på den här enheten</div>
+    <div class="sect">Synk mellan enheter</div>
+    <div class="panel rows">
+      ${SYNC.key
+        ? row('syncnow', 'Synka nu', syncStatus()) + row('syncoff', '<span class="mute">Sluta synka den här enheten</span>')
+        : row('synckey', 'Koppla synk', 'Av')}
+    </div>
+    <div class="sect">Ändringar</div>
     <div class="panel rows">
       ${row('export', 'Kopiera ändringar', changed)}
-      ${row('wipe', wipe)}
+      ${SYNC.key ? '' : row('wipe', wipe)}
     </div>
     <div class="info">${BASE.games.length} spel från Grouvee${BASE.exported ? ' (export ' + esc(BASE.exported.slice(0, 10)) + ')' : ''}.<br>
-      Ändringar sparas bara på den här enheten tills servern finns. Kopiera dem och klistra in i chatten med Claude så hamnar de i grundfilen.<br>
+      ${SYNC.key ? 'Ändringar synkas automatiskt mellan dina enheter.' : 'Ändringar sparas bara på den här enheten.'}
+      Kopiera dem och klistra in i chatten med Claude så hamnar de också i grundfilen.<br>
       Version ${BUILD}</div>`;
 }
 function renderBody() {

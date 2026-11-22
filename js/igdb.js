@@ -49,7 +49,7 @@ function addFromIgdb(igdbId) {
   const g = fromIgdb(x);
   Object.keys(g).forEach(k => { if (g[k] === undefined || (Array.isArray(g[k]) && !g[k].length && k === 'ser')) delete g[k]; });
   if (!GM[g.id]) {
-    if (BASE.games.some(b => b.id === g.id) || PATCH.add.some(b => b.id === g.id)) delete PATCH.del[g.id];   // borttaget tidigare: ta tillbaka
+    if (BASE.games.some(b => b.id === g.id) || PATCH.add.some(b => b.id === g.id)) PATCH.del[g.id] = -Date.now();   // borttaget tidigare: ta tillbaka (negativt = återställt, se sync.js)
     else PATCH.add.push(g);
     save();
   }

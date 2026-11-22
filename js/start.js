@@ -19,6 +19,7 @@ fetch('data/library.json?v=' + BUILD, { cache: 'no-cache' }).then(r => r.json())
   if (history.state && history.state.tab) restore(history.state);   // t.ex. efter omladdning
   else { history.replaceState(snapshot(0), ''); render(); }
   checkVersion();
+  syncNow();
 }).catch(() => {
   rebuild(); render();
   $('#mbody').innerHTML = '<div class="empty">Kunde inte läsa biblioteket. Kolla nätet och ladda om.</div>';

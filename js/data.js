@@ -119,7 +119,7 @@ function prune() {
 
 function rebuild() {
   const del = PATCH.del || {}, pg = PATCH.g || {};
-  GAMES = BASE.games.concat(PATCH.add || []).filter(g => !del[g.id]).map(g => {
+  GAMES = BASE.games.concat(PATCH.add || []).filter(g => !(del[g.id] > 0)).map(g => {   // del < 0 = återställt
     const m = Object.assign({}, g, pg[g.id] || {});
     if (pg[g.id] && 's' in pg[g.id]) delete m.cf;
     return m;
@@ -131,7 +131,7 @@ function rebuild() {
   GAMES.forEach(g => (g.ser || []).forEach(s => { SERIES[s] = (SERIES[s] || 0) + 1; }));
 }
 
-function save() { lsSet('st_patch_v1', PATCH); rebuild(); render(); }
+function save() { lsSet('st_patch_v1', PATCH); rebuild(); render(); syncSoon(); }
 function setGame(id, fields) {
   PATCH.g[id] = Object.assign(PATCH.g[id] || {}, fields, { t: Date.now() });
   save();

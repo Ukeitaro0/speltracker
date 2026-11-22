@@ -133,6 +133,9 @@ const ACTIONS = {
     UI.so = true;
     renderGame();
   },
+  synckey: () => connectSync(),
+  syncnow: () => { syncNow(); renderBody(); },
+  syncoff: () => disconnectSync(),
   export: () => {
     const txt = JSON.stringify({ speltracker: BUILD, patch: PATCH });
     (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject())
@@ -182,6 +185,7 @@ document.addEventListener('change', e => {
     PATCH.g[g.id] = Object.assign(PATCH.g[g.id] || {}, { note: v, t: Date.now() });
     lsSet('st_patch_v1', PATCH);
     rebuild();
+    syncSoon();
   }
 });
 document.addEventListener('input', e => {

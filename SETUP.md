@@ -30,3 +30,13 @@
    - **Deploy**.
 5. Öppna workerns adress (står överst, slutar på `.workers.dev`). Visar den `"twitch":"ok"` fungerar det.
 6. Skicka adressen till Claude. Adressen är inte hemlig, men id och secret ska aldrig in i chatten.
+
+## 4. Synk mellan telefon och dator (ca 5 min på datorn)
+1. Cloudflare → **Storage & databases** → **D1** → **Create database** → namn `speltracker` → Create.
+2. Workern **speltracker** → **Bindings** (eller Settings → Bindings) → **Add binding** → **D1 database**
+   → Variable name `DB` → välj databasen `speltracker` → spara/deploy.
+3. Workern → **Settings** → **Variables and secrets** → **Add**: Key `SYNC_KEY`, Value = en egen lång kod
+   (minst 20 tecken, t.ex. fyra slumpord + siffror), kryssa **Secret** → Add variable and deploy. Spara koden i lösenordshanteraren.
+4. **Edit code** (välj versionen *Latest* om editorn är skrivskyddad) → klistra in senaste worker.js → **Deploy**.
+5. Öppna workerns adress: `"sync":"ok"` betyder klart.
+6. I appen på varje enhet: **Mer → Koppla synk** → skriv in koden.

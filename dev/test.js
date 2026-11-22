@@ -54,7 +54,24 @@ const errors = [];
     await p.click('#mbody [data-f="l:l11"]');
     await p.screenshot({ path: out + '/m7_topp25.png' });
     // Sök i IGDB (servern låtsas: svaret kommer härifrån)
-    await p.route('https://speltracker.ukeitaro.workers.dev/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify([
+    // Synk: "andra enheten" har gett Man of Medan 5 stjärnor. Servern svarar med det + det vi skickade.
+    let syncBody = null;
+    await p.route('https://speltracker.ukeitaro.workers.dev/sync', r => {
+      syncBody = JSON.parse(r.request().postData()).patch;
+      if (r.request().headers()['authorization'] !== 'Bearer testkod') return r.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"Fel synkkod"}' });
+      const merged = Object.assign({}, syncBody, { g: Object.assign({}, syncBody.g, { g130863: { r: 5, t: Date.now() + 1e6 } }) });
+      r.fulfill({ contentType: 'application/json', body: JSON.stringify({ patch: merged, t: Date.now() }) });
+    });
+    await p.click('#tabs [data-tab="more"]');
+    p.once('dialog', d => d.accept('testkod'));
+    await p.click('[data-act="synckey"]');
+    await p.waitForFunction(() => SYNC.state === 'ok');
+    if ((await p.evaluate(() => GM['g130863'].r)) !== 5) errors.push('mobil: synk tog inte in ändring från andra enheten');
+    if (!syncBody || !syncBody.g || !Object.keys(syncBody.g).length) errors.push('mobil: synk skickade inga lokala ändringar');
+    await p.screenshot({ path: out + '/m18_synk.png' });
+    await p.unroute('https://speltracker.ukeitaro.workers.dev/sync');
+    await p.route('https://speltracker.ukeitaro.workers.dev/sync', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ patch: JSON.parse(r.request().postData()).patch }) }));
+    await p.route('https://speltracker.ukeitaro.workers.dev/search**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify([
       { id: 999999, name: 'Testspel: Nytt', first_release_date: 1700000000, cover: { image_id: 'co39s8' }, platforms: [{ abbreviation: 'PS5' }, { abbreviation: 'PC' }],
         genres: [{ name: 'Adventure' }], involved_companies: [{ developer: true, company: { name: 'Testbolag' } }], aggregated_rating: 81.4, collections: [{ name: 'Testserie' }] },
       { id: 55047, name: 'The Dark Pictures Anthology: Man of Medan', first_release_date: 1567036800 }

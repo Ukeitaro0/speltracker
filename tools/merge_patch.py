@@ -36,8 +36,8 @@ def main(src, dst='data/library.json'):
         if a['id'] not in by_id:
             a = {k: v for k, v in a.items() if k != 't'}
             lib['games'].append(a); by_id[a['id']] = a; changed += 1
-    for gid in (patch.get('del') or {}):
-        if gid in by_id:
+    for gid, t in (patch.get('del') or {}).items():
+        if t > 0 and gid in by_id:   # t < 0 = återställt
             lib['games'] = [g for g in lib['games'] if g['id'] != gid]; changed += 1
             for l in lib['lists']:
                 l['ids'] = [x for x in l['ids'] if x != gid]
