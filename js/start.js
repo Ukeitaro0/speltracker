@@ -15,7 +15,10 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) chec
 
 // ---------- Start ----------
 fetch('data/library.json?v=' + BUILD, { cache: 'no-cache' }).then(r => r.json()).then(d => {
-  BASE = d; prune(); rebuild(); render(); checkVersion();
+  BASE = d; prune(); rebuild();
+  if (history.state && history.state.tab) restore(history.state);   // t.ex. efter omladdning
+  else { history.replaceState(snapshot(0), ''); render(); }
+  checkVersion();
 }).catch(() => {
   rebuild(); render();
   $('#mbody').innerHTML = '<div class="empty">Kunde inte läsa biblioteket. Kolla nätet och ladda om.</div>';

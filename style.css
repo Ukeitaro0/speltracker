@@ -189,7 +189,9 @@ svg{flex-shrink:0}
 .serie+.serie{margin-top:6px}
 .scard.plain{background:none;padding:0}
 .scard.plain h2{padding:0 4px}
-.yback{margin-left:-12px}
+.lhead .back{margin-left:-12px;margin-right:-6px;flex-shrink:0}
+.lhead .tl{display:flex;align-items:center;gap:4px;min-width:0}
+.lhead .ttl{margin-right:auto}
 #toast{position:fixed;left:50%;bottom:calc(96px + var(--sb));transform:translateX(-50%);background:var(--acc);color:var(--bg);padding:10px 16px;border-radius:18px;font-size:14px;font-weight:600;z-index:60;display:none;max-width:90vw;text-align:center}
 #toast.show{display:block}
 

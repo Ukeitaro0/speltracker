@@ -82,12 +82,13 @@ function renderTabs() {
 // ---------- Rubrik ----------
 let lastHead = '';   // rubriken ritas bara om när den ändras, så att sökfältet behåller fokus
 function renderHead() {
-  const title = t => `<div class="lhead"><span class="h1">${t}</span></div>`;
+  const back = depth() > 0 ? `<button class="icon back" data-act="back" aria-label="Tillbaka">${ico('back', 24)}</button>` : '';
+  const title = t => `<div class="lhead"><span class="tl">${back}<span class="h1">${t}</span></span></div>`;
   let h;
   if (UI.tab === 'lib') {
     const c = current();
     h = `<div class="lhead">
-        <button class="ttl" data-act="sheet">${c.dot ? dot(c.dot) : ''}<h1>${esc(c.title)}</h1><span class="chev">${ico('chev', 20)}</span></button>
+        ${back}<button class="ttl" data-act="sheet">${c.dot ? dot(c.dot) : ''}<h1>${esc(c.title)}</h1><span class="chev">${ico('chev', 20)}</span></button>
         <div class="dhead">
           <label class="search">${ico('search', 18)}<input id="q" type="search" placeholder="Sök i biblioteket" aria-label="Sök i biblioteket" autocomplete="off"></label>
           <button class="addb" data-act="tab" data-tab="search" aria-label="Lägg till spel">${ico('plus', 22)}</button>
@@ -98,9 +99,7 @@ function renderHead() {
     h = title('Sök') + `<label class="search" style="margin-bottom:18px">${ico('search', 18)}
       <input id="q" type="search" placeholder="Spelets namn" aria-label="Sök spel" autocomplete="off"></label>`;
   } else if (UI.tab === 'stats' && UI.year) {
-    h = `<div class="lhead" style="justify-content:flex-start;gap:4px">
-        <button class="icon yback" data-act="yback" aria-label="Tillbaka till översikt">${ico('back', 24)}</button>
-        <span class="h1">Ditt ${UI.year}</span></div>`;
+    h = title('Ditt ' + UI.year);
   } else {
     h = title({ lists: 'Listor', stats: 'Statistik', more: 'Mer' }[UI.tab]);
   }

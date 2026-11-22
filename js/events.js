@@ -2,41 +2,52 @@
 // Händelser: knappar har data-act="namn" och hanteras av ACTIONS[namn](knapp, spel).
 // g = spelet som är öppet på spelkortet (annars undefined).
 
-function openGame(id) {
-  Object.assign(UI, { game: id, so: false, lo: false, oo: false, po: false, big: false });
-  history.pushState({ game: id }, '');
-  renderGame();
-  const gp = $('#game .gp');
-  if (gp) gp.scrollTop = 0;
+// ---------- Navigering med historik ----------
+// Varje steg (kategori, lista, serie, utvecklare, år, spelkort) sparas i webbläsarens historik:
+// {tab, f, year, game, d, y}. d = antal steg från fliken (styr tillbaka-pilen), y = scrollläge.
+// Tillbaka-pilen och webbläsarens bakåt går samma väg: history.back() → popstate → restore().
+const depth = () => (history.state && history.state.d) || 0;
+const snapshot = d => ({ tab: UI.tab, f: V.f, year: UI.year, game: UI.game, d });
+
+function go(ch, root) {
+  // Kom ihåg var vi var på sidan vi lämnar.
+  if (history.state) history.replaceState(Object.assign({}, history.state, { y: scrollY }), '');
+  const d = root ? 0 : depth() + 1;
+  if ('f' in ch) { setView({ f: ch.f }); UI.reorder = null; UI.q = ''; }
+  if ('tab' in ch) { UI.tab = ch.tab; if (ch.tab !== 'search') UI.q = ''; }
+  if ('year' in ch) UI.year = ch.year;
+  Object.assign(UI, { game: ch.game || null, sheet: false, so: false, lo: false, oo: false, po: false, big: false });
+  history.pushState(snapshot(d), '');
+  if (ch.game && Object.keys(ch).length === 1) {   // bara spelkortet öppnas, resten står kvar
+    renderGame();
+    const gp = $('#game .gp');
+    if (gp) gp.scrollTop = 0;
+  } else {
+    render();
+    scrollTo(0, 0);
+  }
 }
+function restore(s) {
+  setView({ f: s.f });
+  Object.assign(UI, { tab: s.tab, year: s.year, game: s.game, sheet: false, reorder: null, big: false,
+    so: false, lo: false, oo: false, po: false });
+  if (s.tab !== 'search') UI.q = '';
+  render();
+  scrollTo(0, s.y || 0);
+}
+addEventListener('popstate', e => { if (e.state) restore(e.state); });
+
+const openGame = id => go({ game: id });
 function closeGame() {
   if (history.state && history.state.game) history.back();
   else { UI.game = null; render(); }
 }
-addEventListener('popstate', () => { if (UI.game) { UI.game = null; render(); } });
 
 function newList(addGame) {
   const name = (prompt('Namn på den nya listan') || '').trim();
   if (!name) return;
   editLists(L => { L.push({ id: 'l' + Date.now(), name, ids: addGame ? [addGame] : [] }); });
   toast('Listan ”' + name + '” skapad');
-}
-function goTab(tab) {
-  UI.tab = tab;
-  UI.sheet = false;
-  if (tab !== 'search') UI.q = '';
-  render();
-  scrollTo(0, 0);
-}
-function showFiltered(f) {
-  setView({ f });
-  UI.reorder = null;
-  UI.q = '';
-  UI.tab = 'lib';
-  UI.sheet = false;
-  closeGame();
-  render();
-  scrollTo(0, 0);
 }
 const toggleGamePart = key => () => { UI[key] = !UI[key]; renderGame(); };
 
@@ -46,16 +57,16 @@ const ACTIONS = {
   close: () => closeGame(),
   sheet: () => { if (!isDesk()) { UI.sheet = true; renderSheet(); } },
   sheetclose: () => { UI.sheet = false; renderSheet(); },
-  filter: b => { setView({ f: b.dataset.f }); UI.reorder = null; UI.q = ''; goTab('lib'); },
+  back: () => history.back(),
+  filter: b => go({ f: b.dataset.f, tab: 'lib' }, UI.tab !== 'lib'),   // från annan flik = ny början
   tab: b => {
-    goTab(b.dataset.tab);
+    go({ tab: b.dataset.tab, year: null }, true);
     if (UI.tab === 'search') { const q = $('#q'); if (q) q.focus(); }
   },
-  year: b => { UI.year = +b.dataset.y; render(); scrollTo(0, 0); },
-  // Från spelkortet: visa alla spel i samma serie / av samma utvecklare.
-  ser: b => showFiltered('ser:' + b.dataset.v),
-  dev: b => showFiltered('dev:' + b.dataset.v),
-  yback: () => { UI.year = null; render(); scrollTo(0, 0); },
+  year: b => go({ year: +b.dataset.y }),
+  // Från spelkortet: visa alla spel i samma serie / av samma utvecklare. Tillbaka öppnar spelkortet igen.
+  ser: b => go({ f: 'ser:' + b.dataset.v, tab: 'lib' }),
+  dev: b => go({ f: 'dev:' + b.dataset.v, tab: 'lib' }),
 
   // Spelkortet
   so: toggleGamePart('so'),
