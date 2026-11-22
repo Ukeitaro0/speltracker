@@ -48,6 +48,36 @@ const errors = [];
     await p.screenshot({ path: out + '/m8_sok.png' });
     await p.click('#tabs [data-tab="more"]');
     await p.screenshot({ path: out + '/m9_mer.png' });
+    // Genomspelning skapas automatiskt och spelet hamnar i årets lista
+    const yr = new Date().getFullYear();
+    const bid = await p.evaluate(() => GAMES.find(g => g.s === 'backlog' && !(g.pl || []).length).id);
+    await p.evaluate(id => openGame(id), bid); await p.waitForSelector('#game.open');
+    await p.click('[data-act="so"]'); await p.click('[data-act="status"][data-s="playing"]');
+    await p.click('[data-act="so"]'); await p.click('[data-act="status"][data-s="played"]');
+    const pl = await p.evaluate(id => GM[id].pl, bid);
+    if (!pl || pl.length !== 1 || pl[0].y !== yr || pl[0].o !== 'played') errors.push('mobil: genomspelning fel ' + JSON.stringify(pl));
+    if (!(await p.evaluate(([id, y]) => LISTS.some(l => l.name === 'played ' + y && l.ids.includes(id)), [bid, yr]))) errors.push('mobil: spelet kom inte med i årslistan');
+    await p.click('[data-act="po"]');
+    await p.screenshot({ path: out + '/m10_genomspelningar.png' });
+    await p.selectOption('[data-act="ply"][data-i="0"]', '2025');
+    if ((await p.evaluate(id => GM[id].pl[0].y, bid)) !== 2025) errors.push('mobil: år gick inte att ändra');
+    await p.click('[data-act="close"].icon');
+    // Statistik
+    await p.click('#tabs [data-tab="stats"]');
+    await p.screenshot({ path: out + '/m11_statistik.png', fullPage: true });
+    await p.click('[data-act="year"][data-y="2025"]');
+    await p.screenshot({ path: out + '/m12_ar.png', fullPage: true });
+    // Ändra ordning i played 2025: dra första spelet till tredje plats
+    await p.evaluate(() => { const l = LISTS.find(x => x.name === 'played 2025'); setView({ f: 'l:' + l.id }); UI.tab = 'lib'; render(); });
+    const before = await p.evaluate(() => current().arr.map(g => g.id));
+    await p.click('[data-act="reorder"]');
+    const g0 = await p.$('.ror:nth-child(1) .grip'), r3 = await p.$('.ror:nth-child(3)');
+    const b0 = await g0.boundingBox(), b3 = await r3.boundingBox();
+    await p.mouse.move(b0.x + 20, b0.y + 20); await p.mouse.down();
+    await p.mouse.move(b0.x + 20, b3.y + b3.height - 5, { steps: 8 }); await p.mouse.up();
+    await p.screenshot({ path: out + '/m13_ordning.png' });
+    const after = await p.evaluate(() => current().arr.map(g => g.id));
+    if (after[2] !== before[0] || after[0] !== before[1]) errors.push('mobil: dra-för-att-flytta fungerade inte ' + after.slice(0, 3) + ' / ' + before.slice(0, 3));
     const patch = await p.evaluate(() => localStorage.getItem('st_patch_v1'));
     if (!patch || !patch.includes('"s":"paused"')) errors.push('ändringen sparades inte');
     // Dator
@@ -56,6 +86,10 @@ const errors = [];
     q.on('pageerror', e => errors.push('dator: ' + e.message));
     await q.goto(URL); await q.waitForSelector('.card');
     await q.screenshot({ path: out + '/d1_bibliotek.png' });
+    await q.click('#side [data-tab="stats"]');
+    await q.screenshot({ path: out + '/d3_statistik.png' });
+    await q.click('[data-act="year"][data-y="2025"]');
+    await q.screenshot({ path: out + '/d4_ar.png' });
     await q.click('#side [data-f="l:l11"]');
     await q.click('.card');
     await q.screenshot({ path: out + '/d2_spelkort.png' });
