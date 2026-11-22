@@ -121,6 +121,9 @@ function yearBody(y) {
   if (noPlat) platParts.push(['Okänd', noPlat, '#33423C']);
   const genres = tally([].concat(...gs.map(g => g.gen || []))).slice(0, 4);
   const years = Object.keys(Y).map(Number).sort((a, b) => b - a);
+  // Utgivna det året som ligger kvar på Wishlist/Backlog (och inte spelats det året)
+  const waiting = GAMES.filter(g => +year(g) === y && (g.s === 'wishlist' || g.s === 'backlog') && !M[g.id])
+    .sort((a, b) => (a.s === b.s ? 0 : a.s === 'backlog' ? -1 : 1) || cmpName(a, b));
 
   return `<div class="stats">
     <div class="ychips">${years.map(x => `<button class="${x === y ? 'on' : ''}" data-act="year" data-y="${x}">${x}</button>`).join('')}</div>
@@ -139,5 +142,8 @@ function yearBody(y) {
       `<div class="gch">${genres.map(([n, c]) => `<span>${esc(genreName(n))} <i>${c}</i></span>`).join('')}</div>`) : ''}
     <div class="scard plain"><h2>Alla spel ${y}</h2>
       ${miniGrid(E.map(x => ({ g: x.g, dot: OUT[x.o].c, label: OUT[x.o].label })))}</div>
+    ${waiting.length ? `<div class="scard plain"><h2>Släppt ${y} – ligger kvar <small>${waiting.length} på Backlog/Wishlist</small></h2>
+      ${miniGrid(waiting.map(g => ({ g, dot: SM[g.s].c, label: SM[g.s].label })))}
+      ${legend([['Backlog', '', SM.backlog.c], ['Wishlist', '', SM.wishlist.c]])}</div>` : ''}
   </div>`;
 }

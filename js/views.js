@@ -259,6 +259,12 @@ function aboutPart(g) {
     </dl>
     <button class="danger" data-act="delgame">Ta bort ur biblioteket</button>`;
 }
+// Omslaget i full storlek; ett tryck var som helst stänger. Den mindre bilden syns medan den stora laddar.
+function bigCover(g) {
+  return `<button class="bigc" data-act="bigclose" aria-label="Stäng omslaget">
+    <img src="${IGDB_IMG}t_1080p/${g.cov}.jpg" alt="Omslag: ${esc(g.n)}"
+      style="background-image:url(${IGDB_IMG}t_cover_big/${g.cov}.jpg)"></button>`;
+}
 function renderGame() {
   const el = $('#game'), g = UI.game && GM[UI.game];
   document.body.classList.toggle('lock', !!g);
@@ -271,7 +277,7 @@ function renderGame() {
   <div class="gp" style="--tint:${rgba(s.c, 0.16)}">
     <div class="gtop"><button class="icon" data-act="close" aria-label="Tillbaka">${ico('back', 24)}</button></div>
     <div class="ghero">
-      ${cover(g, `<span class="ct">${esc(g.n)}</span>`)}
+      ${g.cov ? `<button class="cbtn" data-act="big" aria-label="Visa omslaget stort">${cover(g)}</button>` : cover(g, `<span class="ct">${esc(g.n)}</span>`)}
       <div><h1>${esc(g.n)}</h1><span class="mute">${esc(sub)}</span></div>
     </div>
     <div class="box">
@@ -279,7 +285,8 @@ function renderGame() {
       <textarea class="notein" data-act="note" rows="2" maxlength="500" placeholder="Notering" aria-label="Notering">${esc(g.note || '')}</textarea>
     </div>
     <div class="box">${playthroughPart(g)}${sep}${listsPart(g)}${sep}${aboutPart(g)}</div>
-  </div>`;
+  </div>
+  ${UI.big && g.cov ? bigCover(g) : ''}`;
 }
 
 function render() {

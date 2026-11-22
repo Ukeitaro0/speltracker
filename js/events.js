@@ -49,6 +49,8 @@ const ACTIONS = {
   lo: toggleGamePart('lo'),
   oo: toggleGamePart('oo'),
   po: toggleGamePart('po'),
+  big: toggleGamePart('big'),
+  bigclose: toggleGamePart('big'),
   status: (b, g) => { UI.so = false; if (b.dataset.s !== g.s) setStatus(g, b.dataset.s); else renderGame(); },
   rate: (b, g) => { const n = +b.dataset.n; setGame(g.id, { r: n === g.r ? 0 : n }); },
   plat: (b, g) => setPlatform(g, g.p === b.dataset.p ? null : b.dataset.p),
@@ -161,7 +163,8 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  if (UI.game) closeGame();
+  if (UI.big) { UI.big = false; renderGame(); }
+  else if (UI.game) closeGame();
   else if (UI.sheet) { UI.sheet = false; renderSheet(); }
 });
 matchMedia('(min-width:900px)').addEventListener('change', () => { lastHead = ''; render(); });
