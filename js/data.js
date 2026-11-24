@@ -252,7 +252,7 @@ function sortGames(arr) {
     cr: (a, b) => ((b.cr || 0) - (a.cr || 0)) || cmpName(a, b),
     rel: (a, b) => (b.rel || '').localeCompare(a.rel || '') || cmpName(a, b),
     add: (a, b) => (b.add || '').localeCompare(a.add || '') || cmpName(a, b),
-    last: (a, b) => (((steamOf(b) || {}).last || 0) - ((steamOf(a) || {}).last || 0)) || cmpName(a, b)   // sync.js
+    last: (a, b) => (((lastPlayed(b) || {}).t || 0) - ((lastPlayed(a) || {}).t || 0)) || cmpName(a, b)   // sync.js
   };
   return arr.slice().sort(by[s] || by.add);
 }

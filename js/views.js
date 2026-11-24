@@ -205,7 +205,7 @@ function moreBody() {
       ${SYNC.key
         ? row('syncnow', 'Synka nu', syncStatus()) + row('syncoff', '<span class="mute">Sluta synka den här enheten</span>')
         : row('synckey', 'Koppla synk', 'Av')}
-      ${SYNC.key ? row('steamnow', 'Steam: hämta speltid nu', esc(steamStatus())) : ''}
+      ${SYNC.key ? row('steamnow', 'Hämta speltid nu', esc(steamStatus())) : ''}
     </div>
     <div class="sect">Ändringar</div>
     <div class="panel rows">

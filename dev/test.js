@@ -92,7 +92,11 @@ const errors = [];
     const portal = await p.evaluate(() => GAMES.find(g => g.n === 'Portal 2'));
     await p.route('https://speltracker.ukeitaro.workers.dev/steam**', r => r.fulfill({ contentType: 'application/json',
       body: JSON.stringify({ t: Date.now(), games: [[620, 'Portal 2', 1234, Math.floor(Date.now() / 1000) - 3 * 86400, portal.igdb]] }) }));
-    await p.evaluate(() => loadSteam(true)); await p.waitForFunction(() => STEAM && STEAM.games.length === 1);
+    await p.route('https://speltracker.ukeitaro.workers.dev/xbox**', r => r.fulfill({ contentType: 'application/json',
+      body: JSON.stringify({ t: Date.now(), games: [['1', 'Halo Infinite', Math.floor(Date.now() / 1000) - 30 * 3600, 'XboxSeries']] }) }));
+    await p.evaluate(() => loadSteam(true)); await p.waitForFunction(() => ACC.steam && ACC.xbox);
+    const halo = await p.evaluate(() => { const g = GAMES.find(x => x.n === 'Halo Infinite'); return g && steamLine(g); });
+    if (halo !== 'Senast spelad i går på Xbox') errors.push('mobil: xboxraden fel: ' + halo);
     await p.evaluate(id => openGame(id), portal.id); await p.waitForSelector('#game.open .played');
     const pl3 = await p.textContent('#game .played');
     if (!/för 3 dagar sedan · 21\u00a0h på Steam/.test(pl3)) errors.push('mobil: steamraden fel: ' + pl3);

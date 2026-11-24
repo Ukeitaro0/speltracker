@@ -11,6 +11,8 @@
 // GET /steam              → dina Steam-spel med speltid och senast spelad (sparat i D1, hämtas en gång per dygn
 //                           av Cron-triggern och direkt med ?refresh=1). Samma Authorization som /sync.
 //                           Kräver Secret STEAM_KEY (Steam Web API-nyckel) och variabeln STEAM_ID (SteamID64).
+// GET /xbox               → dina Xbox-spel med senast spelad, via OpenXBL (xbl.io). Som /steam.
+//                           Kräver Secret XBL_KEY (API-nyckel från xbl.io).
 
 const ALLOWED = ['https://ukeitaro0.github.io'];
 const FIELDS = 'fields name,first_release_date,cover.image_id,platforms.abbreviation,genres.name,involved_companies.company.name,involved_companies.developer,aggregated_rating,rating,collections.name;';
@@ -103,19 +105,37 @@ async function steamFetch(env) {
     if (res.ok) (await res.json()).forEach(x => { map[x.uid] = x.game; });
   }
   const data = { t: Date.now(), games: list.map(g => [g.appid, g.name, g.playtime_forever || 0, g.rtime_last_played || 0, map[g.appid] || null]) };
-  await env.DB.prepare('CREATE TABLE IF NOT EXISTS store (k TEXT PRIMARY KEY, v TEXT NOT NULL, t INTEGER NOT NULL)').run();
-  await env.DB.prepare('INSERT INTO store (k, v, t) VALUES (?, ?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v, t = excluded.t')
-    .bind('steam', JSON.stringify(data), data.t).run();
+  await saveStore(env, 'steam', data);
   return data;
 }
-async function steam(req, env, cors, url) {
+// ---------- Xbox (OpenXBL) ----------
+// Sparas som {t, games: [[titleId, namn, senast spelad (unix-sek), enheter]]}.
+async function xboxFetch(env) {
+  if (!env.XBL_KEY) throw new Error('XBL_KEY saknas i Cloudflare');
+  const r = await fetch('https://xbl.io/api/v2/player/titleHistory', { headers: { 'X-Authorization': env.XBL_KEY, 'Accept': 'application/json' } });
+  if (!r.ok) throw new Error('OpenXBL svarade ' + r.status + (r.status === 401 || r.status === 403 ? ' (kolla nyckeln)' : ''));
+  const j = await r.json();
+  const list = j.titles || (j.content && j.content.titles);
+  if (!Array.isArray(list)) throw new Error('OpenXBL gav inga spel (fält: ' + Object.keys(j).join(', ').slice(0, 120) + ')');
+  const last = t => { const d = t.titleHistory && t.titleHistory.lastTimePlayed; return d ? Math.floor(Date.parse(d) / 1000) || 0 : 0; };
+  const data = { t: Date.now(), games: list.filter(t => t.type !== 'App').map(t => [t.titleId, t.name, last(t), (t.devices || []).join(',')]) };
+  await saveStore(env, 'xbox', data);
+  return data;
+}
+async function saveStore(env, k, data) {
+  await env.DB.prepare('CREATE TABLE IF NOT EXISTS store (k TEXT PRIMARY KEY, v TEXT NOT NULL, t INTEGER NOT NULL)').run();
+  await env.DB.prepare('INSERT INTO store (k, v, t) VALUES (?, ?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v, t = excluded.t')
+    .bind(k, JSON.stringify(data), data.t).run();
+}
+// GET /steam och /xbox: sparat resultat, eller hämta nu (?refresh=1 eller om inget finns sparat).
+async function account(req, env, cors, url, k, fetcher) {
   if (!env.SYNC_KEY || !env.DB) return json({ error: 'Synken är inte uppsatt (SYNC_KEY eller DB saknas)' }, cors, 500);
   const auth = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/, '');
   if (!same(auth, env.SYNC_KEY)) return json({ error: 'Fel synkkod' }, cors, 401);
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS store (k TEXT PRIMARY KEY, v TEXT NOT NULL, t INTEGER NOT NULL)').run();
-  const row = await env.DB.prepare('SELECT v FROM store WHERE k = ?').bind('steam').first();
+  const row = await env.DB.prepare('SELECT v FROM store WHERE k = ?').bind(k).first();
   if (row && url.searchParams.get('refresh') !== '1') return json(JSON.parse(row.v), cors);
-  return json(await steamFetch(env), cors);
+  return json(await fetcher(env), cors);
 }
 
 function json(data, cors, status = 200, cache = '') {
@@ -134,7 +154,8 @@ export default {
     const url = new URL(req.url);
     try {
       if (url.pathname === '/sync' && req.method === 'POST') return await sync(req, env, cors);
-      if (url.pathname === '/steam') return await steam(req, env, cors, url);
+      if (url.pathname === '/steam') return await account(req, env, cors, url, 'steam', steamFetch);
+      if (url.pathname === '/xbox') return await account(req, env, cors, url, 'xbox', xboxFetch);
       if (!env.TWITCH_CLIENT_ID || !env.TWITCH_CLIENT_SECRET) return json({ error: 'Hemligheterna saknas i Cloudflare' }, cors, 500);
       if (url.pathname === '/search') {
         const q = (url.searchParams.get('q') || '').replace(/["\\]/g, '').trim().slice(0, 100);
@@ -147,13 +168,16 @@ export default {
         return json(await igdb(env, `where id = (${ids.join(',')}); ${FIELDS} limit 500;`), cors, 200, 'public, max-age=86400');
       }
       return json({ ok: true, app: 'speltracker', twitch: (await token(env)) ? 'ok' : 'fel',
-        sync: env.SYNC_KEY && env.DB ? 'ok' : 'ej uppsatt', steam: env.STEAM_KEY && env.STEAM_ID ? 'ok' : 'ej uppsatt' }, cors);
+        sync: env.SYNC_KEY && env.DB ? 'ok' : 'ej uppsatt', steam: env.STEAM_KEY && env.STEAM_ID ? 'ok' : 'ej uppsatt',
+        xbox: env.XBL_KEY ? 'ok' : 'ej uppsatt' }, cors);
     } catch (e) {
       return json({ error: String(e.message || e) }, cors, 502);
     }
   },
-  // Cron-trigger (Settings → Triggers → Cron, t.ex. 0 4 * * *): hämtar Steam en gång per dygn.
+  // Cron-trigger (Settings → Triggers → Cron, t.ex. 0 4 * * *): hämtar Steam och Xbox en gång per dygn.
   async scheduled(event, env, ctx) {
-    if (env.STEAM_KEY && env.STEAM_ID && env.DB) ctx.waitUntil(steamFetch(env));
+    if (!env.DB) return;
+    if (env.STEAM_KEY && env.STEAM_ID) ctx.waitUntil(steamFetch(env));
+    if (env.XBL_KEY) ctx.waitUntil(xboxFetch(env));
   },
 };

@@ -83,52 +83,71 @@ function disconnectSync() {
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { syncNow(); loadSteam(); } });
 
-// ---------- Steam: speltid och senast spelad (GET /steam, samma kod som synken) ----------
-// Sparas per enhet i localStorage st_steam {t, games: [[appid, namn, minuter, senast (unix-sek), igdb|null]]}.
-let STEAM = ls('st_steam', null), STEAMI = null, steamErr = '';
-function steamIndex() {
-  STEAMI = { ig: {}, nm: {} };
-  ((STEAM && STEAM.games) || []).forEach(([app, n, mins, last, ig]) => {
-    const x = { app, mins, last };
-    if (ig) STEAMI.ig[ig] = x;
-    STEAMI.nm[norm(n)] = x;
+// ---------- Spelkonton: Steam och Xbox (GET /steam, /xbox – samma kod som synken) ----------
+// Sparas per enhet i localStorage st_steam / st_xbox.
+//   steam: {t, games: [[appid, namn, minuter, senast (unix-sek), igdb|null]]}
+//   xbox:  {t, games: [[titleId, namn, senast (unix-sek), enheter]]}
+const ACC = { steam: ls('st_steam', null), xbox: ls('st_xbox', null) };
+const ACC_ERR = { steam: '', xbox: '' };
+let ACCI = null;
+function accIndex() {
+  ACCI = { sIg: {}, sNm: {}, xNm: {} };
+  ((ACC.steam && ACC.steam.games) || []).forEach(([app, n, mins, last, ig]) => {
+    const x = { mins, last };
+    if (ig) ACCI.sIg[ig] = x;
+    ACCI.sNm[norm(n)] = x;
   });
+  ((ACC.xbox && ACC.xbox.games) || []).forEach(([id, n, last]) => { ACCI.xNm[norm(n)] = { last }; });
 }
-// Steamdata för ett spel: först via IGDB-kopplingen, annars på namn.
+// Steam via IGDB-kopplingen, annars på namn. Xbox på namn.
 function steamOf(g) {
-  if (!STEAM) return null;
-  if (!STEAMI) steamIndex();
-  return (g.igdb && STEAMI.ig[g.igdb]) || STEAMI.nm[norm(g.n)] || null;
+  if (!ACC.steam) return null;
+  if (!ACCI) accIndex();
+  return (g.igdb && ACCI.sIg[g.igdb]) || ACCI.sNm[norm(g.n)] || null;
 }
-async function loadSteam(force) {
-  if (!SYNC.key || (!force && STEAM && Date.now() - STEAM.at < 3600e3)) return;   // högst en gång i timmen
+function xboxOf(g) {
+  if (!ACC.xbox) return null;
+  if (!ACCI) accIndex();
+  return ACCI.xNm[norm(g.n)] || null;
+}
+// Senast spelad (unix-sek) på något konto, och var.
+function lastPlayed(g) {
+  const s = steamOf(g), x = xboxOf(g);
+  const a = (s && s.last) || 0, b = (x && x.last) || 0;
+  return b > a ? { t: b, src: 'Xbox' } : a ? { t: a, src: 'Steam' } : null;
+}
+async function loadAccount(k, force) {
+  const cur = ACC[k];
+  if (!force && cur && Date.now() - cur.at < 3600e3) return;   // högst en gång i timmen
   try {
-    const r = await fetch(API + '/steam' + (force ? '?refresh=1' : ''), { headers: { 'Authorization': 'Bearer ' + SYNC.key } });
+    const r = await fetch(API + '/' + k + (force ? '?refresh=1' : ''), { headers: { 'Authorization': 'Bearer ' + SYNC.key } });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Servern svarade ' + r.status);
-    STEAM = Object.assign(d, { at: Date.now() });
-    lsSet('st_steam', STEAM);
-    STEAMI = null;
-    steamErr = '';
-  } catch (e) { steamErr = e.message === 'Failed to fetch' ? 'Ingen kontakt med servern' : e.message; }
+    ACC[k] = Object.assign(d, { at: Date.now() });
+    lsSet('st_' + k, ACC[k]);
+    ACCI = null;
+    ACC_ERR[k] = '';
+  } catch (e) { ACC_ERR[k] = e.message === 'Failed to fetch' ? 'Ingen kontakt med servern' : e.message; }
+}
+async function loadSteam(force) {   // båda kontona (namnet kvar sedan Steam kom först)
+  if (!SYNC.key) return;
+  await Promise.all([loadAccount('steam', force), loadAccount('xbox', force)]);
   const a = document.activeElement;
   if (!drag && !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) render();
 }
 function steamStatus() {
-  if (steamErr) return steamErr;
-  if (!STEAM) return 'Inte hämtad';
-  return (STEAM.games || []).length + ' spel · ' + new Date(STEAM.t).toLocaleDateString('sv-SE');
+  const one = (k, label) => ACC_ERR[k] ? label + ': ' + ACC_ERR[k] : ACC[k] ? label + ' ' + (ACC[k].games || []).length : '';
+  return [one('steam', 'Steam'), one('xbox', 'Xbox')].filter(Boolean).join(' · ') || 'Inte hämtad';
 }
-// "för 3 dagar sedan · 42 h på Steam"
+// "Senast spelad för 3 dagar sedan på Xbox · 21 h på Steam"
 function steamLine(g) {
-  const s = steamOf(g);
-  if (!s || !s.mins) return '';
-  const h = s.mins < 60 ? s.mins + '\u00a0min' : Math.round(s.mins / 60) + '\u00a0h';   // hårt mellanslag: siffran och h på samma rad
-  let when = '';
-  if (s.last) {
-    const d = new Date(s.last * 1000), days = Math.floor((Date.now() - d) / 864e5);
-    when = days < 1 ? 'i dag' : days < 2 ? 'i går' : days < 30 ? 'för ' + days + ' dagar sedan'
+  const s = steamOf(g), lp = lastPlayed(g), parts = [];
+  if (lp) {
+    const d = new Date(lp.t * 1000), days = Math.floor((Date.now() - d) / 864e5);
+    const when = days < 1 ? 'i dag' : days < 2 ? 'i går' : days < 30 ? 'för ' + days + ' dagar sedan'
       : d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric' });
+    parts.push('Senast spelad ' + when + (lp.src === 'Xbox' || !(s && s.mins) ? ' på ' + lp.src : ''));   // "på Steam" står redan efter timmarna
   }
-  return (when ? 'Senast spelad ' + when + ' · ' : '') + h + ' på Steam';
+  if (s && s.mins) parts.push((s.mins < 60 ? s.mins + ' min' : Math.round(s.mins / 60) + ' h') + ' på Steam');   // hårt mellanslag
+  return parts.join(' · ');
 }
