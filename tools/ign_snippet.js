@@ -18,6 +18,12 @@
     s: (((f.querySelector('span.status-indicator') || { getAttribute: () => '' }).getAttribute('style') || '')
       .match(/media\/(\w+)/) || [])[1]
   }));
-  copy(JSON.stringify({ url: location.href, g }));
-  alert(g.length + ' spel kopierade. Klistra in i chatten.');
+  // copy() finns inte alltid (IGN:s sida skuggar den) – visa i en ruta och kopiera därifrån.
+  const t = document.createElement('textarea');
+  t.value = JSON.stringify({ url: location.href, g });
+  t.style = 'position:fixed;inset:20px;z-index:99999;font-size:12px';
+  document.body.appendChild(t);
+  t.focus(); t.select();
+  const ok = document.execCommand('copy');
+  alert(g.length + ' spel. ' + (ok ? 'Kopierat! Klistra in i chatten.' : 'Tryck Ctrl+C i rutan.'));
 })();
