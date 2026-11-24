@@ -74,7 +74,7 @@ svg{flex-shrink:0}
 
 /* Flikrad (mobil) */
 #tabs{position:fixed;left:16px;right:16px;bottom:calc(14px + var(--sb));display:flex;gap:10px;z-index:35}
-#tabs .tbar{flex:1;min-width:0;height:64px;border-radius:32px;background:#1F2B27;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;padding:0 4px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+#tabs .tbar{flex:1;min-width:0;height:64px;border-radius:32px;background:#1F2B27;display:flex;justify-content:space-around;align-items:center;padding:0 4px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
 #tabs .tsearch{width:64px;height:64px;flex-shrink:0;border-radius:32px;background:#1F2B27;color:var(--text);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(0,0,0,.4)}
 #tabs .tsearch.on{color:var(--acc)}
 body.bigon #tabs{display:none}
@@ -267,3 +267,8 @@ button.ror{width:100%}
 .dhead{display:flex;align-items:center;gap:10px}
 .gp.subp>.ghero{display:none}
 @media (min-width:900px){ .gp.subp>.ghero{display:flex} }
+/* Rensa-knapp i sökrutan: syns bara när något är skrivet */
+.search .qx{width:32px;height:32px;margin-right:-8px;border-radius:16px;display:flex;align-items:center;justify-content:center;color:var(--mute);background:var(--surf2);flex-shrink:0}
+.search input:placeholder-shown+.qx{display:none}
+.search input::-webkit-search-cancel-button{display:none;-webkit-appearance:none}
+#tabs .tbar button{padding:0 4px}

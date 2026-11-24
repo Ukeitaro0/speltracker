@@ -107,6 +107,9 @@ const errors = [];
     await p.click('[data-act="close"].icon');
     await p.click('#tabs [data-tab="search"]'); await p.fill('#q', 'final fantasy');
     await p.screenshot({ path: out + '/m8_sok.png' });
+    await p.click('.search .qx');
+    if ((await p.inputValue('#q')) !== '' || (await p.evaluate(() => UI.q)) !== '') errors.push('mobil: x i sökrutan rensade inte');
+    if (await p.isVisible('.search .qx')) errors.push('mobil: x syns i tom sökruta');
     await p.click('#tabs [data-tab="more"]');
     await p.screenshot({ path: out + '/m9_mer.png' });
     // Genomspelning skapas automatiskt och spelet hamnar i årets lista

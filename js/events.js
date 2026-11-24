@@ -69,6 +69,13 @@ const ACTIONS = {
   ser: b => go({ f: 'ser:' + b.dataset.v, tab: 'lib' }),
   dev: b => go({ f: 'dev:' + b.dataset.v, tab: 'lib' }),
 
+  qclear: () => {
+    const q = $('#q');
+    UI.q = '';
+    if (q) { q.value = ''; q.focus(); }
+    if (UI.tab === 'search') igdbSearch('');
+    renderBody();
+  },
   totop: () => scrollTo({ top: 0, behavior: 'smooth' }),
 
   // Spelkortet

@@ -103,14 +103,14 @@ function renderHead() {
     h = `<div class="lhead">
         ${back}<button class="ttl" data-act="sheet">${c.dot ? dot(c.dot) : ''}<h1>${esc(c.title)}</h1><span class="chev">${ico('chev', 20)}</span></button>
         <div class="dhead">
-          <label class="search">${ico('search', 18)}<input id="q" type="search" placeholder="Sök i biblioteket" aria-label="Sök i biblioteket" autocomplete="off"></label>
+          <label class="search">${ico('search', 18)}<input id="q" type="search" placeholder="Sök i biblioteket" aria-label="Sök i biblioteket" autocomplete="off"><button class="qx" data-act="qclear" aria-label="Rensa sökningen">${ico('x', 16)}</button></label>
           ${sortBtn}<button class="addb" data-act="tab" data-tab="search" aria-label="Lägg till spel">${ico('plus', 20)}</button>
         </div>
       </div>
       <div class="sub" id="sub"></div>`;
   } else if (UI.tab === 'search') {
     h = title('Sök') + `<label class="search" style="margin-bottom:18px">${ico('search', 18)}
-      <input id="q" type="search" placeholder="Spelets namn" aria-label="Sök spel" autocomplete="off"></label>`;
+      <input id="q" type="search" placeholder="Spelets namn" aria-label="Sök spel" autocomplete="off"><button class="qx" data-act="qclear" aria-label="Rensa sökningen">${ico('x', 16)}</button></label>`;
   } else if (UI.tab === 'stats') {
     short = UI.year ? 'Ditt ' + UI.year : 'Statistik';
     h = title(short, yearMenu());   // stats.js
