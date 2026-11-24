@@ -17,6 +17,7 @@ function cover(g, inner = '', size = 't_cover_big') {
   return `<span class="cover${g.cov ? ' has' : ''}" style="background:${coverColor(g)}">${img}${inner}</span>`;
 }
 function stars(r) { return r ? '★'.repeat(r) + '<i>' + '★'.repeat(5 - r) + '</i>' : '<i>★★★★★</i>'; }
+const stIco = (s, n) => ico('st-' + s.id, n);
 const dot = (c, size) => `<span class="dot" style="background:${c}${size ? `;width:${size}px;height:${size}px` : ''}"></span>`;
 const chev = n => `<span class="mute">${ico('chev', n || 16)}</span>`;
 const options = (items, selected) => items
@@ -30,11 +31,11 @@ function card(g, rank) {
     : '';
   return `<button class="card" data-act="game" data-id="${g.id}">
     ${cover(g, `
-      <span class="ctop"><span class="pill" style="background:${s.c}">${s.label}</span>${rank ? `<span class="rank">${rank}</span>` : ''}</span>
+      <span class="ctop"><span class="pill" style="background:${s.c}">${stIco(s, 10)}${s.label}</span>${rank ? `<span class="rank">${rank}</span>` : ''}</span>
       <span class="ct">${esc(g.n)}</span>`)}
     <span class="nm">${esc(g.n)}</span>
     <span class="meta">
-      <span class="stars"${g.r ? ` title="${RATE[g.r]}"` : ''}>${stars(g.r)}</span>
+      ${g.r ? `<span class="stars" title="${RATE[g.r]}">${stars(g.r)}</span>` : '<span></span>'}
       <span class="mr">${critic}${[...new Set(plats(g).map(p => platInfo(p).icon))].slice(0, 3).map(x => ico(x, 16)).join('')}</span>
     </span>
   </button>`;
@@ -70,7 +71,7 @@ function renderSide() {
   $('#side').innerHTML = `<div class="brand">Speltracker</div>
     ${tabRow('stats', 'Statistik', 'stats')}
     <div class="sscroll">${navRows()}</div>
-    <div class="foot">${tabRow('more', 'Inställningar', 'more')}</div>`;
+    <div class="foot">${tabRow('more', 'Inställningar', 'gear')}</div>`;
   $('#side .sscroll').scrollTop = top;
 }
 function renderSheet() {
@@ -81,35 +82,43 @@ function renderSheet() {
     : '';
 }
 function renderTabs() {
-  const tab = (id, label) => `<button class="${UI.tab === id ? 'on' : ''}" data-act="tab" data-tab="${id}">${ico(id, 22)}${label}</button>`;
-  $('#tabs').innerHTML = tab('lib', 'Bibliotek') + tab('lists', 'Listor') + tab('search', 'Sök')
-    + tab('stats', 'Statistik') + tab('more', 'Mer');
+  const tab = (id, label, icon) => `<button class="${UI.tab === id ? 'on' : ''}" data-act="tab" data-tab="${id}">${ico(icon || id, 22)}${label}</button>`;
+  $('#tabs').innerHTML = `<div class="tbar">${tab('lib', 'Bibliotek') + tab('lists', 'Listor')
+    + tab('stats', 'Statistik') + tab('more', 'Inställningar', 'gear')}</div>
+    <button class="tsearch${UI.tab === 'search' ? ' on' : ''}" data-act="tab" data-tab="search" aria-label="Sök">${ico('search', 24)}</button>`;
 }
 
 // ---------- Rubrik ----------
 let lastHead = '';   // rubriken ritas bara om när den ändras, så att sökfältet behåller fokus
 function renderHead() {
   const back = depth() > 0 ? `<button class="icon back" data-act="back" aria-label="Tillbaka">${ico('back', 24)}</button>` : '';
-  const title = t => `<div class="lhead"><span class="tl">${back}<span class="h1">${t}</span></span></div>`;
-  let h;
+  const title = (t, end = '') => `<div class="lhead"><span class="tl">${back}<span class="h1">${t}</span></span>${end}</div>`;
+  let h, short;
   if (UI.tab === 'lib') {
     const c = current();
+    short = c.title;
+    // Sortering som ikonknapp: den osynliga rullgardinen ovanpå öppnar telefonens egen meny.
+    const sortBtn = c.list || c.fixed ? '' : `<label class="tbtn" title="Sortering">${ico('sort', 20)}
+      <select data-act="sort" aria-label="Sortering">${options(SORTS, V.sort)}</select></label>`;
     h = `<div class="lhead">
         ${back}<button class="ttl" data-act="sheet">${c.dot ? dot(c.dot) : ''}<h1>${esc(c.title)}</h1><span class="chev">${ico('chev', 20)}</span></button>
         <div class="dhead">
           <label class="search">${ico('search', 18)}<input id="q" type="search" placeholder="Sök i biblioteket" aria-label="Sök i biblioteket" autocomplete="off"></label>
-          <button class="addb" data-act="tab" data-tab="search" aria-label="Lägg till spel">${ico('plus', 22)}</button>
+          ${sortBtn}<button class="addb" data-act="tab" data-tab="search" aria-label="Lägg till spel">${ico('plus', 20)}</button>
         </div>
       </div>
       <div class="sub" id="sub"></div>`;
   } else if (UI.tab === 'search') {
     h = title('Sök') + `<label class="search" style="margin-bottom:18px">${ico('search', 18)}
       <input id="q" type="search" placeholder="Spelets namn" aria-label="Sök spel" autocomplete="off"></label>`;
-  } else if (UI.tab === 'stats' && UI.year) {
-    h = title('Ditt ' + UI.year);
+  } else if (UI.tab === 'stats') {
+    short = UI.year ? 'Ditt ' + UI.year : 'Statistik';
+    h = title(short, yearMenu());   // stats.js
   } else {
-    h = title({ lists: 'Listor', stats: 'Statistik', more: 'Mer' }[UI.tab]);
+    short = { lists: 'Listor', more: 'Inställningar' }[UI.tab];
+    h = title(short);
   }
+  $('#ctitle').textContent = short || 'Sök';
   if (h !== lastHead) {
     $('#mhead').innerHTML = h;
     lastHead = h;
@@ -132,7 +141,7 @@ function renderSub(c) {
     el.innerHTML = `${c.arr.length} spel · listordning
       ${link('reorder', 'Ändra ordning')}${link('renamelist', 'Byt namn')}${link('dellist', 'Ta bort lista')}`;
   else
-    el.innerHTML = `${c.arr.length} spel · <select data-act="sort" aria-label="Sortering">${options(SORTS, V.sort)}</select>`;
+    el.innerHTML = `${c.arr.length} spel · ${(SORTS.find(x => x[0] === V.sort) || SORTS[0])[1]}`;
 }
 
 // ---------- Innehåll per flik ----------
@@ -219,14 +228,17 @@ function renderBody() {
 }
 
 // ---------- Spelkortet ----------
+// Huvudsidan: Status, Betyg, Plattform, Notering + rader som öppnar egna sidor (UI.sub = 'po' | 'lo' | 'oo').
+const SUBS = { po: 'Genomspelningar', lo: 'Listor', oo: 'Om spelet' };
+const check = () => `<span style="color:var(--acc)">${ico('check', 18)}</span>`;
 function statusPart(g, s) {
   const head = `<button class="row" data-act="so"><span>Status</span>
-    <span class="rv">${dot(s.c, 10)}<span style="color:${s.c}">${s.label}</span>${chev()}</span></button>`;
+    <span class="rv" style="color:${s.c}">${stIco(s, 12)}<span>${s.label}</span><span class="mute">${ico('updown', 16)}</span></span></button>`;
   if (!UI.so) return head;
   return head + `<div class="opts">${ST.map(x => `
     <button class="opt" data-act="status" data-s="${x.id}"${x.id === g.s ? ` style="background:${rgba(x.c, .14)}"` : ''}>
-      <span class="nl">${dot(x.c, 10)}${x.label}</span>
-      ${x.id === g.s ? `<span style="color:var(--acc)">${ico('check', 18)}</span>` : ''}
+      <span class="nl"><span style="color:${x.c};display:flex">${stIco(x, 14)}</span>${x.label}</span>
+      ${x.id === g.s ? check() : ''}
     </button>`).join('')}</div>`;
 }
 function ratingPart(g) {
@@ -238,19 +250,22 @@ function ratingPart(g) {
     <span class="rl">Betyg<small>${g.r ? RATE[g.r] : 'Inget betyg än'}</small>${ext ? `<small class="ext">${ext}</small>` : ''}</span>
     <span class="sbig">${starBtns}</span></div>`;
 }
-// Familjeknappar + (om vald familj har modeller) en rad med modeller under.
+// Plattform som meny: familjer, och modellerna för den valda familjen. "tidigare" = spelat där förut.
 function platformPart(g) {
-  const cur = g.p ? famOf(g.p) : null, earlier = plats(g).map(famOf);
-  const fams = FAMS.concat(cur === 'other' ? [{ id: 'other', label: 'Annan plattform', models: [] }] : []);
-  const btn = f => {
-    const on = cur === f.id, was = !on && earlier.includes(f.id);   // was = spelat där tidigare
-    return `<button data-act="plat" data-p="${f.id}" aria-label="${f.label}" aria-pressed="${on}"
-      class="${on ? 'on' : was ? 'was' : ''}"${was ? ' title="Spelat tidigare"' : ''}>${ico(f.id, 20)}</button>`;
-  };
-  const fam = FAMS.find(f => f.id === cur);
-  const models = fam && fam.models.length ? `<div class="pmods">${fam.models.map(([id, short]) =>
-    `<button class="chip${g.p === id ? ' on' : ''}" data-act="platm" data-p="${id}">${short}</button>`).join('')}</div>` : '';
-  return `<div class="row"><span>Plattform</span><span class="plats">${fams.map(btn).join('')}</span></div>${models}`;
+  const cur = g.p ? platInfo(g.p) : null;
+  const head = `<button class="row" data-act="pm"><span>Plattform</span>
+    <span class="rv">${cur ? ico(cur.icon, 18) + `<span>${esc(platLabel(g.p))}</span>` : '<span class="mute" style="font-weight:400">Välj</span>'}
+      <span class="mute">${ico('updown', 16)}</span></span></button>`;
+  if (!UI.pm) return head;
+  const earlier = plats(g).filter(p => p !== g.p), fam = g.p ? famOf(g.p) : null;
+  const fams = FAMS.concat(fam === 'other' ? [{ id: 'other', label: 'Annan plattform', models: [] }] : []);
+  return head + `<div class="opts">${fams.map(f => {
+    const on = fam === f.id, was = earlier.some(p => famOf(p) === f.id);
+    const models = on && f.models.length ? `<div class="pmods">${f.models.map(([id, short]) =>
+      `<button class="chip${g.p === id ? ' on' : earlier.includes(id) ? ' was' : ''}" data-act="platm" data-p="${id}">${short}</button>`).join('')}</div>` : '';
+    return `<button class="opt" data-act="plat" data-p="${f.id}"${on ? ` style="background:${rgba('#B5E3C8', .12)}"` : ''}>
+        <span class="nl">${ico(f.id, 18)}${f.label}${was ? '<small class="mute">tidigare</small>' : ''}</span>${on ? check() : ''}</button>${models}`;
+  }).join('')}</div>`;
 }
 // Rullgardin med familjer och modeller i grupper.
 function platSelect(i, value) {
@@ -261,11 +276,11 @@ function platSelect(i, value) {
       ? `<optgroup label="${f.label}">${opt(f.id, f.label + ' (okänd)')}${f.models.map(([id]) => opt(id, platLabel(id))).join('')}</optgroup>`
       : opt(f.id, f.label)).join('')}</select>`;
 }
-function playthroughPart(g) {
+// Rad som öppnar en egen sida (pil åt höger)
+const subRow = (k, value) => `<button class="row" data-act="sub" data-k="${k}"><span>${SUBS[k]}</span>
+    <span class="rv mute"><span class="ell">${value}</span>${ico('right', 16)}</span></button>`;
+function playthroughBody(g) {
   const pl = g.pl || [];
-  const head = `<button class="row" data-act="po"><span>Genomspelningar</span>
-    <span class="rv mute">${pl.length ? pl.map(x => x.y).join(', ') : 'Inga'} ${ico('chev', 16)}</span></button>`;
-  if (!UI.po) return head;
   const years = Array.from({ length: NOWY - 1979 }, (_, k) => NOWY - k).map(v => [v, v]);
   const row = (x, i) => `<div class="plr">
       <select data-act="ply" data-i="${i}" aria-label="År">${options(years, x.y)}</select>
@@ -274,23 +289,17 @@ function playthroughPart(g) {
         ['played', OUT.played.label], ['abandoned', OUT.abandoned.label]], x.o || '')}</select>
       <button class="plx" data-act="pldel" data-i="${i}" aria-label="Ta bort genomspelningen ${x.y}">${ico('x', 18)}</button>
     </div>`;
-  return head + `<div class="pls">${pl.map(row).join('')}
+  return `<div class="pls">${pl.map(row).join('')}
     <button class="chip add" data-act="pladd">+ Lägg till genomspelning</button></div>`;
 }
-function listsPart(g) {
-  const inL = LISTS.filter(l => l.ids.includes(g.id));
-  const head = `<button class="row" data-act="lo"><span>Listor</span>
-    <span class="rv mute">${inL.length ? inL.length + (inL.length === 1 ? ' lista' : ' listor') : 'Ingen'} ${ico('chev', 16)}</span></button>`;
-  if (!UI.lo) return head;
-  return head + `<div class="chips">
+function listsBodyFor(g) {
+  return `<div class="chips">
     ${LISTS.map(l => `<button class="chip${l.ids.includes(g.id) ? ' on' : ''}" data-act="togglelist" data-l="${l.id}">${esc(l.name)}</button>`).join('')}
     <button class="chip add" data-act="newlist" data-addgame="1">+ Ny lista</button></div>`;
 }
-function aboutPart(g) {
-  const head = `<button class="row" data-act="oo"><span>Om spelet</span><span class="rv mute">${ico('chev', 16)}</span></button>`;
-  if (!UI.oo) return head;
+function aboutBody(g) {
   const item = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`;
-  return head + `${g.cf ? '<div class="note">Spelet låg på flera hyllor i Grouvee. Kolla att statusen stämmer.</div>' : ''}
+  return `${g.cf ? '<div class="note">Spelet låg på flera hyllor i Grouvee. Kolla att statusen stämmer.</div>' : ''}
     <dl class="dl">
       ${item('Utgivning', esc(g.rel || '–'))}
       ${item('Utvecklare', esc((g.dev || []).join(', ') || '–'))}
@@ -298,8 +307,17 @@ function aboutPart(g) {
       ${item('I Grouvee', esc((g.praw || []).join(', ') || '–'))}
       ${item('Tillagd', esc((g.add || '').slice(0, 10) || '–'))}
       ${g.url ? item('Länk', `<a href="${esc(g.url)}" target="_blank" rel="noopener">Grouvee</a>`) : ''}
-    </dl>
-    <button class="danger" data-act="delgame">Ta bort ur biblioteket</button>`;
+    </dl>`;
+}
+// Menyn bakom "…" uppe till höger
+function gameMenu(g) {
+  if (!UI.gm) return '';
+  return `<button class="mshade" data-act="gm" aria-label="Stäng menyn"></button>
+    <div class="gmenu" role="menu">
+      ${g.cov ? `<button role="menuitem" data-act="big">Visa omslaget stort</button>` : ''}
+      ${g.url ? `<a role="menuitem" href="${esc(g.url)}" target="_blank" rel="noopener">Öppna i Grouvee</a>` : ''}
+      <button role="menuitem" class="red" data-act="delgame">Ta bort ur biblioteket</button>
+    </div>`;
 }
 // Omslaget i full storlek; ett tryck var som helst stänger. Den mindre bilden syns medan den stora laddar.
 function bigCover(g) {
@@ -310,6 +328,7 @@ function bigCover(g) {
 function renderGame() {
   const el = $('#game'), g = UI.game && GM[UI.game];
   document.body.classList.toggle('lock', !!g);
+  document.body.classList.toggle('bigon', !!(g && UI.big));
   el.className = g ? 'open' : '';
   if (!g) { el.innerHTML = ''; return; }
   const s = SM[g.s] || SM.backlog;
@@ -319,19 +338,34 @@ function renderGame() {
   const series = gameSeries(g).map(s => `<button class="serie" data-act="ser" data-v="${esc(s)}">
       ${ico('lists', 14)}<span>${esc(s)}</span><i>${SERIES[s]} spel</i></button>`).join('');
   const sep = '<div class="sep"></div>';
-  el.innerHTML = `<div class="backdrop" data-act="close"></div>
-  <div class="gp" style="--tint:${rgba(s.c, 0.16)}">
-    <div class="gtop"><button class="icon" data-act="close" aria-label="Tillbaka">${ico('back', 24)}</button></div>
-    <div class="ghero">
+  const hero = `<div class="ghero">
       ${g.cov ? `<button class="cbtn" data-act="big" aria-label="Visa omslaget stort">${cover(g)}</button>` : cover(g, `<span class="ct">${esc(g.n)}</span>`)}
       <div class="gt"><h1>${esc(g.n)}</h1><span class="mute">${sub}</span>${series}</div>
-    </div>
-    <div class="box">
-      ${statusPart(g, s)}${sep}${ratingPart(g)}${sep}${platformPart(g)}${sep}
-      <textarea class="notein" data-act="note" rows="2" maxlength="500" placeholder="Notering" aria-label="Notering">${esc(g.note || '')}</textarea>
-    </div>
-    <div class="box">${playthroughPart(g)}${sep}${listsPart(g)}${sep}${aboutPart(g)}</div>
-  </div>
+    </div>`;
+  let main;
+  if (UI.sub) {
+    const body = { po: playthroughBody, lo: listsBodyFor, oo: aboutBody }[UI.sub](g);
+    main = `<div class="gtop"><button class="icon round" data-act="back" aria-label="Tillbaka">${ico('back', 22)}</button></div>
+      ${hero}<div class="gsub"><h2>${SUBS[UI.sub]}</h2><span class="mute">${esc(g.n)}</span></div>
+      <div class="box pad">${body}</div>`;
+  } else {
+    const inL = LISTS.filter(l => l.ids.includes(g.id)).map(l => esc(l.name));
+    const pl = g.pl || [];
+    main = `<div class="gtop">
+        <button class="icon round" data-act="close" aria-label="Tillbaka">${ico('back', 22)}</button>
+        <button class="icon round" data-act="gm" aria-label="Fler val" aria-expanded="${!!UI.gm}">${ico('more', 20)}</button>
+        ${gameMenu(g)}
+      </div>
+      ${hero}
+      <div class="box">
+        ${statusPart(g, s)}${sep}${ratingPart(g)}${sep}${platformPart(g)}${sep}
+        <label class="nlab"><span>Notering</span>
+          <textarea class="notein" data-act="note" rows="1" maxlength="500" placeholder="Skriv något om spelet">${esc(g.note || '')}</textarea></label>
+      </div>
+      <div class="box">${subRow('po', pl.length ? pl.map(x => x.y).join(', ') : 'Inga')}${sep}${subRow('lo', inL.length ? inL.join(', ') : 'Ingen')}${sep}${subRow('oo', '')}</div>`;
+  }
+  el.innerHTML = `<div class="backdrop" data-act="close"></div>
+  <div class="gp${UI.sub ? ' subp' : ''}" style="--tint:${rgba(s.c, 0.16)}">${main}</div>
   ${UI.big && g.cov ? bigCover(g) : ''}`;
 }
 

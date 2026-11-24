@@ -51,8 +51,17 @@ function hbars(rows) {
 const tile = (value, label, color) => `<div class="tile"><b${color ? ` style="color:${color}"` : ''}>${value}</b><span>${label}</span></div>`;
 const scard = (title, body, small) => `<div class="scard"><h2>${title}${small ? ` <small>${small}</small>` : ''}</h2>${body}</div>`;
 const openLabel = y => y < NOWY ? 'Fortsatte' : 'Pågår';   // ej avslutad det året
+// Gett upp randigt, så att det skiljer sig från Klarat även utan färgseende.
+const STRIPE = `repeating-linear-gradient(135deg,${OUT.abandoned.c} 0 3px,#B5707F 3px 6px)`;
 const outcomeParts = (k, u, o, label = 'Pågår / fortsatte') =>
-  [['Klarat', k, OUT.played.c], ['Gett upp', u, OUT.abandoned.c], [label, o, OUT[''].c]];
+  [['Klarat', k, OUT.played.c], ['Gett upp', u, STRIPE], [label, o, OUT[''].c]];
+
+// Menyn "Alla år ⌄" i rubriken (views.js renderHead). Den osynliga rullgardinen öppnar telefonens egen meny.
+function yearMenu() {
+  const ys = Object.keys(yearMap()).map(Number).sort((a, b) => b - a);
+  return `<label class="pmenu">${UI.year || 'Alla år'}${ico('chev', 14)}
+    <select data-act="yearsel" aria-label="Välj år">${options([['', 'Alla år']].concat(ys.map(y => [y, y])), UI.year || '')}</select></label>`;
+}
 
 // ---------- Översikt ----------
 function yearColumns(Y) {
@@ -65,7 +74,7 @@ function yearColumns(Y) {
   const max = Math.max(1, ...ys.map(y => count(y).reduce((a, b) => a + b, 0)));
   const col = y => {
     const [k, u, o] = count(y), total = k + u + o;
-    const segs = [[o, OUT[''].c], [u, OUT.abandoned.c], [k, OUT.played.c]].filter(x => x[0])
+    const segs = [[o, OUT[''].c], [u, STRIPE], [k, OUT.played.c]].filter(x => x[0])
       .map(x => `<span style="flex:${x[0]} 0 0;background:${x[1]}"></span>`).join('');
     return `<button class="ycol" data-act="year" data-y="${y}" aria-label="${y}: ${total} spel">
         <small>${total}</small>
@@ -88,7 +97,7 @@ function statsBody() {
       ${tile(pct(k, u), 'completion rate', 'var(--acc)')}
       ${tile(avgRating(GAMES) + ' ★', 'ditt snittbetyg', 'var(--star)')}
     </div>
-    ${scard('Spelat per år', yearColumns(yearMap()), 'tryck på ett år')}
+    ${scard('Spelat per år', yearColumns(yearMap()))}
     ${scard('Status', stackWithLegend(status))}
     ${scard('Plattform', hbars(platRows) + `<span class="mute" style="font-size:13px">${noPlat} spel saknar plattform</span>`)}
     ${scard('Genre', hbars(genres), 'topp 6')}

@@ -4,10 +4,11 @@
 
 // ---------- Navigering med historik ----------
 // Varje steg (kategori, lista, serie, utvecklare, år, spelkort) sparas i webbläsarens historik:
-// {tab, f, year, game, d, y}. d = antal steg från fliken (styr tillbaka-pilen), y = scrollläge.
+// {tab, f, year, game, sub, d, y}. d = antal steg från fliken (styr tillbaka-pilen), y = scrollläge.
 // Tillbaka-pilen och webbläsarens bakåt går samma väg: history.back() → popstate → restore().
 const depth = () => (history.state && history.state.d) || 0;
-const snapshot = d => ({ tab: UI.tab, f: V.f, year: UI.year, game: UI.game, d });
+const snapshot = d => ({ tab: UI.tab, f: V.f, year: UI.year, game: UI.game, sub: UI.sub, d });
+const CLOSED = { sheet: false, so: false, pm: false, gm: false, big: false };
 
 function go(ch, root) {
   // Kom ihåg var vi var på sidan vi lämnar.
@@ -16,9 +17,9 @@ function go(ch, root) {
   if ('f' in ch) { setView({ f: ch.f }); UI.reorder = null; UI.q = ''; }
   if ('tab' in ch) { UI.tab = ch.tab; if (ch.tab !== 'search') UI.q = ''; }
   if ('year' in ch) UI.year = ch.year;
-  Object.assign(UI, { game: ch.game || null, sheet: false, so: false, lo: false, oo: false, po: false, big: false });
+  Object.assign(UI, CLOSED, { game: ch.game || null, sub: ch.sub || null });
   history.pushState(snapshot(d), '');
-  if (ch.game && Object.keys(ch).length === 1) {   // bara spelkortet öppnas, resten står kvar
+  if (ch.game && Object.keys(ch).every(k => k === 'game' || k === 'sub')) {   // bara spelkortet ändras, resten står kvar
     renderGame();
     const gp = $('#game .gp');
     if (gp) gp.scrollTop = 0;
@@ -29,8 +30,7 @@ function go(ch, root) {
 }
 function restore(s) {
   setView({ f: s.f });
-  Object.assign(UI, { tab: s.tab, year: s.year, game: s.game, sheet: false, reorder: null, big: false,
-    so: false, lo: false, oo: false, po: false });
+  Object.assign(UI, CLOSED, { tab: s.tab, year: s.year, game: s.game, sub: s.sub || null, reorder: null });
   if (s.tab !== 'search') UI.q = '';
   render();
   scrollTo(0, s.y || 0);
@@ -39,7 +39,8 @@ addEventListener('popstate', e => { if (e.state) restore(e.state); });
 
 const openGame = id => go({ game: id });
 function closeGame() {
-  if (history.state && history.state.game) history.back();
+  // Från en undersida (t.ex. Genomspelningar) stängs hela spelkortet: två steg tillbaka.
+  if (history.state && history.state.game) history.go(history.state.sub ? -2 : -1);
   else { UI.game = null; render(); }
 }
 
@@ -68,17 +69,24 @@ const ACTIONS = {
   ser: b => go({ f: 'ser:' + b.dataset.v, tab: 'lib' }),
   dev: b => go({ f: 'dev:' + b.dataset.v, tab: 'lib' }),
 
+  totop: () => scrollTo({ top: 0, behavior: 'smooth' }),
+
   // Spelkortet
   so: toggleGamePart('so'),
-  lo: toggleGamePart('lo'),
-  oo: toggleGamePart('oo'),
-  po: toggleGamePart('po'),
-  big: toggleGamePart('big'),
+  pm: toggleGamePart('pm'),
+  gm: toggleGamePart('gm'),
+  sub: (b, g) => go({ game: g.id, sub: b.dataset.k }),
+  big: () => { UI.gm = false; UI.big = true; renderGame(); },
   bigclose: toggleGamePart('big'),
   status: (b, g) => { UI.so = false; if (b.dataset.s !== g.s) setStatus(g, b.dataset.s); else renderGame(); },
   rate: (b, g) => { const n = +b.dataset.n; setGame(g.id, { r: n === g.r ? 0 : n }); },
-  plat: (b, g) => setPlatform(g, g.p && famOf(g.p) === b.dataset.p ? null : b.dataset.p),     // familj
-  platm: (b, g) => setPlatform(g, g.p === b.dataset.p ? famOf(b.dataset.p) : b.dataset.p),    // modell
+  // Familj: menyn står kvar om familjen har modeller att välja bland. Samma familj igen = ingen plattform.
+  plat: (b, g) => {
+    const p = g.p && famOf(g.p) === b.dataset.p ? null : b.dataset.p, f = FAMS.find(x => x.id === p);
+    UI.pm = !!(f && f.models.length);
+    setPlatform(g, p);
+  },
+  platm: (b, g) => { UI.pm = false; setPlatform(g, g.p === b.dataset.p ? famOf(b.dataset.p) : b.dataset.p); },   // modell
   pladd: (b, g) => {
     const pl = plCopy(g);
     pl.push({ y: NOWY, p: g.p || null, o: 'played' });
@@ -93,7 +101,8 @@ const ACTIONS = {
     setPl(g, pl, pl.some(z => z.y === x.y) ? null : L => dropFromYear(L, g.id, x.y));
   },
   delgame: (b, g) => {
-    if (!confirm('Ta bort ”' + g.n + '” ur biblioteket?')) return;
+    UI.gm = false;
+    if (!confirm('Ta bort ”' + g.n + '” ur biblioteket?')) { renderGame(); return; }
     PATCH.del[g.id] = Date.now();
     closeGame();
     save();
@@ -166,6 +175,7 @@ document.addEventListener('click', e => {
 document.addEventListener('change', e => {
   const t = e.target, act = t.dataset.act, g = UI.game && GM[UI.game];
   if (act === 'sort') { setView({ sort: t.value }); renderBody(); return; }
+  if (act === 'yearsel') { if (t.value) go({ year: +t.value }); else go({ tab: 'stats', year: null }, true); return; }
   if (!g) return;
   if (act === 'ply' || act === 'plp' || act === 'plo') {
     const pl = plCopy(g), x = pl[+t.dataset.i], v = t.value;
@@ -259,3 +269,8 @@ function endDrag() {
 }
 document.addEventListener('pointerup', endDrag);
 document.addEventListener('pointercancel', endDrag);
+
+// Liten rubrik överst när den stora har skrollats bort (mobil). Tryck = till toppen.
+addEventListener('scroll', () => {
+  document.body.classList.toggle('scrolled', !isDesk() && scrollY > 60);
+}, { passive: true });
