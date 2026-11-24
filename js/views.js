@@ -205,6 +205,7 @@ function moreBody() {
       ${SYNC.key
         ? row('syncnow', 'Synka nu', syncStatus()) + row('syncoff', '<span class="mute">Sluta synka den här enheten</span>')
         : row('synckey', 'Koppla synk', 'Av')}
+      ${SYNC.key ? row('steamnow', 'Steam: hämta speltid nu', esc(steamStatus())) : ''}
     </div>
     <div class="sect">Ändringar</div>
     <div class="panel rows">
@@ -359,7 +360,7 @@ function renderGame() {
   const parent = g.par && GM[g.par] ? `<button class="partof" data-act="game" data-id="${g.par}">Tillägg till <b>${esc(GM[g.par].n)}</b></button>` : '';
   const hero = `<div class="ghero">
       ${g.cov ? `<button class="cbtn" data-act="big" aria-label="Visa omslaget stort">${cover(g)}</button>` : cover(g, `<span class="ct">${esc(g.n)}</span>`)}
-      <div class="gt"><h1>${esc(g.n)}</h1><span class="mute">${sub}</span>${parent}${series}</div>
+      <div class="gt"><h1>${esc(g.n)}</h1><span class="mute">${sub}</span>${parent}${steamLine(g) ? `<span class="played">${steamLine(g)}</span>` : ''}${series}</div>
     </div>`;
   let main;
   if (UI.sub) {

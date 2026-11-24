@@ -8,6 +8,9 @@
 //                           dem med det som finns sparat (senaste ändringen vinner) och svarar med resultatet.
 //                           Kräver huvudet Authorization: Bearer <SYNC_KEY> (Secret i Cloudflare) och en
 //                           D1-databas kopplad som DB (Bindings).
+// GET /steam              → dina Steam-spel med speltid och senast spelad (sparat i D1, hämtas en gång per dygn
+//                           av Cron-triggern och direkt med ?refresh=1). Samma Authorization som /sync.
+//                           Kräver Secret STEAM_KEY (Steam Web API-nyckel) och variabeln STEAM_ID (SteamID64).
 
 const ALLOWED = ['https://ukeitaro0.github.io'];
 const FIELDS = 'fields name,first_release_date,cover.image_id,platforms.abbreviation,genres.name,involved_companies.company.name,involved_companies.developer,aggregated_rating,rating,collections.name;';
@@ -78,6 +81,43 @@ async function sync(req, env, cors) {
   return json({ patch: merged, t: now }, cors);
 }
 
+// ---------- Steam ----------
+// Sparas som {t, games: [[appid, namn, minuter, senast spelad (unix-sek), igdb-id|null]]}.
+async function steamFetch(env) {
+  if (!env.STEAM_KEY || !env.STEAM_ID) throw new Error('STEAM_KEY eller STEAM_ID saknas i Cloudflare');
+  const u = 'https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?include_appinfo=1&include_played_free_games=1'
+    + '&key=' + encodeURIComponent(env.STEAM_KEY) + '&steamid=' + encodeURIComponent(env.STEAM_ID);
+  const r = await fetch(u);
+  if (!r.ok) throw new Error('Steam svarade ' + r.status + (r.status === 401 || r.status === 403 ? ' (kolla nyckeln)' : ''));
+  const list = ((await r.json()).response || {}).games;
+  if (!list) throw new Error('Steam gav inga spel – är Speldetaljer offentliga i profilens sekretessinställningar?');
+  // Steams app-id → IGDB-id (external_game_source 1 = Steam), 500 åt gången
+  const map = {};
+  for (let i = 0; i < list.length; i += 500) {
+    const ids = list.slice(i, i + 500).map(g => '"' + g.appid + '"').join(',');
+    const res = await fetch('https://api.igdb.com/v4/external_games', {
+      method: 'POST',
+      headers: { 'Client-ID': env.TWITCH_CLIENT_ID, 'Authorization': 'Bearer ' + await token(env), 'Accept': 'application/json' },
+      body: `fields game,uid; where external_game_source = 1 & uid = (${ids}); limit 500;`,
+    });
+    if (res.ok) (await res.json()).forEach(x => { map[x.uid] = x.game; });
+  }
+  const data = { t: Date.now(), games: list.map(g => [g.appid, g.name, g.playtime_forever || 0, g.rtime_last_played || 0, map[g.appid] || null]) };
+  await env.DB.prepare('CREATE TABLE IF NOT EXISTS store (k TEXT PRIMARY KEY, v TEXT NOT NULL, t INTEGER NOT NULL)').run();
+  await env.DB.prepare('INSERT INTO store (k, v, t) VALUES (?, ?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v, t = excluded.t')
+    .bind('steam', JSON.stringify(data), data.t).run();
+  return data;
+}
+async function steam(req, env, cors, url) {
+  if (!env.SYNC_KEY || !env.DB) return json({ error: 'Synken är inte uppsatt (SYNC_KEY eller DB saknas)' }, cors, 500);
+  const auth = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/, '');
+  if (!same(auth, env.SYNC_KEY)) return json({ error: 'Fel synkkod' }, cors, 401);
+  await env.DB.prepare('CREATE TABLE IF NOT EXISTS store (k TEXT PRIMARY KEY, v TEXT NOT NULL, t INTEGER NOT NULL)').run();
+  const row = await env.DB.prepare('SELECT v FROM store WHERE k = ?').bind('steam').first();
+  if (row && url.searchParams.get('refresh') !== '1') return json(JSON.parse(row.v), cors);
+  return json(await steamFetch(env), cors);
+}
+
 function json(data, cors, status = 200, cache = '') {
   const h = { ...cors, 'Content-Type': 'application/json; charset=utf-8' };
   if (cache) h['Cache-Control'] = cache;
@@ -94,6 +134,7 @@ export default {
     const url = new URL(req.url);
     try {
       if (url.pathname === '/sync' && req.method === 'POST') return await sync(req, env, cors);
+      if (url.pathname === '/steam') return await steam(req, env, cors, url);
       if (!env.TWITCH_CLIENT_ID || !env.TWITCH_CLIENT_SECRET) return json({ error: 'Hemligheterna saknas i Cloudflare' }, cors, 500);
       if (url.pathname === '/search') {
         const q = (url.searchParams.get('q') || '').replace(/["\\]/g, '').trim().slice(0, 100);
@@ -106,9 +147,13 @@ export default {
         return json(await igdb(env, `where id = (${ids.join(',')}); ${FIELDS} limit 500;`), cors, 200, 'public, max-age=86400');
       }
       return json({ ok: true, app: 'speltracker', twitch: (await token(env)) ? 'ok' : 'fel',
-        sync: env.SYNC_KEY && env.DB ? 'ok' : 'ej uppsatt' }, cors);
+        sync: env.SYNC_KEY && env.DB ? 'ok' : 'ej uppsatt', steam: env.STEAM_KEY && env.STEAM_ID ? 'ok' : 'ej uppsatt' }, cors);
     } catch (e) {
       return json({ error: String(e.message || e) }, cors, 502);
     }
+  },
+  // Cron-trigger (Settings → Triggers → Cron, t.ex. 0 4 * * *): hämtar Steam en gång per dygn.
+  async scheduled(event, env, ctx) {
+    if (env.STEAM_KEY && env.STEAM_ID && env.DB) ctx.waitUntil(steamFetch(env));
   },
 };

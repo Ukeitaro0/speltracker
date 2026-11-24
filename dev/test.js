@@ -88,6 +88,16 @@ const errors = [];
     if ((await p.evaluate(() => GM['g130863'].r)) !== 5) errors.push('mobil: synk tog inte in ändring från andra enheten');
     if (!syncBody || !syncBody.g || !Object.keys(syncBody.g).length) errors.push('mobil: synk skickade inga lokala ändringar');
     await p.screenshot({ path: out + '/m18_synk.png' });
+    // Steam: speltid och senast spelad på spelkortet (servern låtsas)
+    const portal = await p.evaluate(() => GAMES.find(g => g.n === 'Portal 2'));
+    await p.route('https://speltracker.ukeitaro.workers.dev/steam**', r => r.fulfill({ contentType: 'application/json',
+      body: JSON.stringify({ t: Date.now(), games: [[620, 'Portal 2', 1234, Math.floor(Date.now() / 1000) - 3 * 86400, portal.igdb]] }) }));
+    await p.evaluate(() => loadSteam(true)); await p.waitForFunction(() => STEAM && STEAM.games.length === 1);
+    await p.evaluate(id => openGame(id), portal.id); await p.waitForSelector('#game.open .played');
+    const pl3 = await p.textContent('#game .played');
+    if (!/för 3 dagar sedan · 21\u00a0h på Steam/.test(pl3)) errors.push('mobil: steamraden fel: ' + pl3);
+    await p.screenshot({ path: out + '/m18b_steam.png' });
+    await p.evaluate(() => closeGame()); await p.waitForTimeout(300);
     await p.unroute('https://speltracker.ukeitaro.workers.dev/sync');
     await p.route('https://speltracker.ukeitaro.workers.dev/sync', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ patch: JSON.parse(r.request().postData()).patch }) }));
     await p.route('https://speltracker.ukeitaro.workers.dev/search**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify([

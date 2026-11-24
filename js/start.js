@@ -20,6 +20,7 @@ fetch('data/library.json?v=' + BUILD, { cache: 'no-cache' }).then(r => r.json())
   else { history.replaceState(snapshot(0), ''); render(); }
   checkVersion();
   syncNow();
+  loadSteam();
 }).catch(() => {
   rebuild(); render();
   $('#mbody').innerHTML = '<div class="empty">Kunde inte läsa biblioteket. Kolla nätet och ladda om.</div>';

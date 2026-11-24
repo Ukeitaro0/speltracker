@@ -51,7 +51,7 @@ const COVERS = ['#3F5A52', '#4A4A6E', '#5C4A5E', '#6A5340', '#3E5A6E', '#5A5E3C'
   '#6A4450', '#40604A', '#55506A', '#4A5A66', '#6A5A46', '#3F5F62'];
 const RATE = ['', 'Dåligt', 'Sådär', 'Bra', 'Riktigt bra', 'Kanonspel!'];
 const SORTS = [['add', 'Senast tillagd'], ['name', 'Namn'], ['rating', 'Betyg'],
-  ['cr', 'Kritikerbetyg'], ['rel', 'Utgivning']];
+  ['cr', 'Kritikerbetyg'], ['rel', 'Utgivning'], ['last', 'Senast spelad']];
 const NOWY = new Date().getFullYear();
 const YEAR_LIST = /^played (\d{4})$/i;   // årslistor heter "played 2025"
 const IGDB_IMG = 'https://images.igdb.com/igdb/image/upload/';
@@ -251,7 +251,8 @@ function sortGames(arr) {
     rating: (a, b) => (b.r - a.r) || cmpName(a, b),
     cr: (a, b) => ((b.cr || 0) - (a.cr || 0)) || cmpName(a, b),
     rel: (a, b) => (b.rel || '').localeCompare(a.rel || '') || cmpName(a, b),
-    add: (a, b) => (b.add || '').localeCompare(a.add || '') || cmpName(a, b)
+    add: (a, b) => (b.add || '').localeCompare(a.add || '') || cmpName(a, b),
+    last: (a, b) => (((steamOf(b) || {}).last || 0) - ((steamOf(a) || {}).last || 0)) || cmpName(a, b)   // sync.js
   };
   return arr.slice().sort(by[s] || by.add);
 }

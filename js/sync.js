@@ -81,4 +81,54 @@ function disconnectSync() {
   lsSet('st_sync_at', 0);
   render();
 }
-document.addEventListener('visibilitychange', () => { if (!document.hidden) syncNow(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { syncNow(); loadSteam(); } });
+
+// ---------- Steam: speltid och senast spelad (GET /steam, samma kod som synken) ----------
+// Sparas per enhet i localStorage st_steam {t, games: [[appid, namn, minuter, senast (unix-sek), igdb|null]]}.
+let STEAM = ls('st_steam', null), STEAMI = null, steamErr = '';
+function steamIndex() {
+  STEAMI = { ig: {}, nm: {} };
+  ((STEAM && STEAM.games) || []).forEach(([app, n, mins, last, ig]) => {
+    const x = { app, mins, last };
+    if (ig) STEAMI.ig[ig] = x;
+    STEAMI.nm[norm(n)] = x;
+  });
+}
+// Steamdata för ett spel: först via IGDB-kopplingen, annars på namn.
+function steamOf(g) {
+  if (!STEAM) return null;
+  if (!STEAMI) steamIndex();
+  return (g.igdb && STEAMI.ig[g.igdb]) || STEAMI.nm[norm(g.n)] || null;
+}
+async function loadSteam(force) {
+  if (!SYNC.key || (!force && STEAM && Date.now() - STEAM.at < 3600e3)) return;   // högst en gång i timmen
+  try {
+    const r = await fetch(API + '/steam' + (force ? '?refresh=1' : ''), { headers: { 'Authorization': 'Bearer ' + SYNC.key } });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'Servern svarade ' + r.status);
+    STEAM = Object.assign(d, { at: Date.now() });
+    lsSet('st_steam', STEAM);
+    STEAMI = null;
+    steamErr = '';
+  } catch (e) { steamErr = e.message === 'Failed to fetch' ? 'Ingen kontakt med servern' : e.message; }
+  const a = document.activeElement;
+  if (!drag && !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) render();
+}
+function steamStatus() {
+  if (steamErr) return steamErr;
+  if (!STEAM) return 'Inte hämtad';
+  return (STEAM.games || []).length + ' spel · ' + new Date(STEAM.t).toLocaleDateString('sv-SE');
+}
+// "för 3 dagar sedan · 42 h på Steam"
+function steamLine(g) {
+  const s = steamOf(g);
+  if (!s || !s.mins) return '';
+  const h = s.mins < 60 ? s.mins + '\u00a0min' : Math.round(s.mins / 60) + '\u00a0h';   // hårt mellanslag: siffran och h på samma rad
+  let when = '';
+  if (s.last) {
+    const d = new Date(s.last * 1000), days = Math.floor((Date.now() - d) / 864e5);
+    when = days < 1 ? 'i dag' : days < 2 ? 'i går' : days < 30 ? 'för ' + days + ' dagar sedan'
+      : d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  return (when ? 'Senast spelad ' + when + ' · ' : '') + h + ' på Steam';
+}
