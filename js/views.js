@@ -32,7 +32,7 @@ function card(g, rank) {
   return `<button class="card" data-act="game" data-id="${g.id}">
     ${cover(g, `
       <span class="ctop"><span class="pill" style="background:${s.c}">${stIco(s, 10)}${s.label}</span>${rank ? `<span class="rank">${rank}</span>` : ''}</span>
-      <span class="ct">${esc(g.n)}</span>`)}
+      <span class="ct">${esc(g.n)}</span>${g.par ? '<span class="dlcb">Tillägg</span>' : ''}`)}
     <span class="nm">${esc(g.n)}</span>
     <span class="meta">
       ${g.r ? `<span class="stars" title="${RATE[g.r]}">${stars(g.r)}</span>` : '<span></span>'}
@@ -292,18 +292,22 @@ function playthroughBody(g) {
   return `<div class="pls">${pl.map(row).join('')}
     <button class="chip add" data-act="pladd">+ Lägg till genomspelning</button></div>`;
 }
-// Tillägg från IGDB: rund bock per rad, stjärnor när den är ibockad. Spelets namn tas bort ur tilläggets.
-const dlcDone = g => (g.dlc || []).filter(([id]) => id in (g.dx || {})).length;
+// Tillägg (från IGDB). De som finns i biblioteket är vanliga spel (g.par = huvudspelet) och öppnas med ett tryck;
+// övriga visas dämpade med en knapp som lägger till dem. Spelets namn tas bort ur tilläggets.
+const dlcHave = g => (g.dlc || []).filter(([ig]) => GI[ig]).length;
 function dlcBody(g) {
-  const dx = g.dx || {}, pre = new RegExp('^' + g.n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[:\\-–]\\s*', 'i');
-  return `<div class="dlcl">${(g.dlc || []).map(([id, n, y]) => {
-    const on = id in dx, name = n.replace(pre, '') || n;
-    const starBtns = [1, 2, 3, 4, 5].map(k => `<button data-act="dlcr" data-i="${id}" data-n="${k}" aria-label="${k} av 5, ${RATE[k]}"
-        title="${RATE[k]}" class="${k <= dx[id] ? 'on' : ''}">★</button>`).join('');
-    return `<div class="dlr">
-      <button class="dlb${on ? ' on' : ''}" data-act="dlc" data-i="${id}" aria-pressed="${on}">
-        <span class="ck">${on ? ico('st-played', 14) : ''}</span><span class="dn">${esc(name)}</span><span class="mute">${y || ''}</span></button>
-      ${on ? `<div class="dls">${starBtns}</div>` : ''}</div>`;
+  const pre = new RegExp('^' + g.n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[:\\-–]\\s*', 'i');
+  return `<div class="dlcl">${(g.dlc || []).map(([ig, n, y]) => {
+    const h = GI[ig], name = esc(n.replace(pre, '') || n);
+    if (h) {
+      const s = SM[h.s] || SM.backlog;
+      return `<button class="dlb" data-act="game" data-id="${h.id}">
+        <span class="ck" style="background:${s.c};color:var(--bg)">${stIco(s, 13)}</span>
+        <span class="dn">${name}${h.r ? `<small class="stars">${stars(h.r)}</small>` : ''}</span>
+        <span class="mute">${s.label}</span><span class="mute">${ico('right', 14)}</span></button>`;
+    }
+    return `<div class="dlb off"><span class="ck"></span><span class="dn">${name}</span><span class="mute">${y || ''}</span>
+      <button class="dla" data-act="dladd" data-i="${ig}" aria-label="Lägg till ${name}">${ico('plus', 18)}</button></div>`;
   }).join('')}</div>`;
 }
 function listsBodyFor(g) {
@@ -352,14 +356,15 @@ function renderGame() {
   const series = gameSeries(g).map(s => `<button class="serie" data-act="ser" data-v="${esc(s)}">
       ${ico('lists', 14)}<span>${esc(s)}</span><i>${SERIES[s]} spel</i></button>`).join('');
   const sep = '<div class="sep"></div>';
+  const parent = g.par && GM[g.par] ? `<button class="partof" data-act="game" data-id="${g.par}">Tillägg till <b>${esc(GM[g.par].n)}</b></button>` : '';
   const hero = `<div class="ghero">
       ${g.cov ? `<button class="cbtn" data-act="big" aria-label="Visa omslaget stort">${cover(g)}</button>` : cover(g, `<span class="ct">${esc(g.n)}</span>`)}
-      <div class="gt"><h1>${esc(g.n)}</h1><span class="mute">${sub}</span>${series}</div>
+      <div class="gt"><h1>${esc(g.n)}</h1><span class="mute">${sub}</span>${parent}${series}</div>
     </div>`;
   let main;
   if (UI.sub) {
     const body = { dl: dlcBody, po: playthroughBody, lo: listsBodyFor, oo: aboutBody }[UI.sub](g);
-    const info = UI.sub === 'dl' ? ` · ${dlcDone(g)} av ${g.dlc.length} spelade` : '';
+    const info = UI.sub === 'dl' ? ` · ${dlcHave(g)} av ${g.dlc.length} i biblioteket` : '';
     main = `<div class="gtop"><button class="icon round" data-act="back" aria-label="Tillbaka">${ico('back', 22)}</button></div>
       ${hero}<div class="gsub"><h2>${SUBS[UI.sub]}</h2><span class="mute">${esc(g.n)}${info}</span></div>
       <div class="box${UI.sub === 'dl' ? '' : ' pad'}">${body}</div>`;
@@ -377,7 +382,7 @@ function renderGame() {
         <label class="nlab"><span>Notering</span>
           <textarea class="notein" data-act="note" rows="1" maxlength="500" placeholder="Skriv något om spelet">${esc(g.note || '')}</textarea></label>
       </div>
-      <div class="box">${(g.dlc || []).length ? subRow('dl', `${dlcDone(g)} av ${g.dlc.length}`) + sep : ''}${subRow('po', pl.length ? pl.map(x => x.y).join(', ') : 'Inga')}${sep}${subRow('lo', inL.length ? inL.join(', ') : 'Ingen')}${sep}${subRow('oo', '')}</div>`;
+      <div class="box">${(g.dlc || []).length ? subRow('dl', `${dlcHave(g)} av ${g.dlc.length}`) + sep : ''}${subRow('po', pl.length ? pl.map(x => x.y).join(', ') : 'Inga')}${sep}${subRow('lo', inL.length ? inL.join(', ') : 'Ingen')}${sep}${subRow('oo', '')}</div>`;
   }
   el.innerHTML = `<div class="backdrop" data-act="close"></div>
   <div class="gp${UI.sub ? ' subp' : ''}" style="--tint:${rgba(s.c, 0.16)}">${main}</div>

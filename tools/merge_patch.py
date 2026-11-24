@@ -5,7 +5,7 @@ Användning: python3 tools/merge_patch.py patch.json
 """
 import json, sys
 
-FIELDS = ('s', 'r', 'p', 'note', 'pl', 'dx')
+FIELDS = ('s', 'r', 'p', 'note', 'pl')
 
 def main(src, dst='data/library.json'):
     patch = json.load(open(src, encoding='utf-8'))['patch']
@@ -25,8 +25,6 @@ def main(src, dst='data/library.json'):
             g.pop('note')
         if g.get('pl') == []:
             g.pop('pl')
-        if g.get('dx') == {}:
-            g.pop('dx')
         # Plattform satt utan genomspelningar i patchen (äldre appversion): fyll i där plattform saknas.
         if f.get('p') and 'pl' not in f:
             for x in g.get('pl') or []:

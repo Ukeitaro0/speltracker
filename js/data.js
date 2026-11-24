@@ -83,7 +83,7 @@ const UI = {                       // tillfälligt läge i gränssnittet
   so: false, lo: false, oo: false, po: false,   // öppna delar på spelkortet
   reorder: null, year: null, big: false
 };
-let GAMES = [], GM = {}, LISTS = [], SERIES = {};   // SERIES = {serienamn: antal spel i biblioteket}
+let GAMES = [], GM = {}, GI = {}, LISTS = [], SERIES = {};   // SERIES = {serienamn: antal spel i biblioteket}, GI = {igdb-id: spel}
 
 function setView(o) { Object.assign(V, o); lsSet('st_view_v1', V); }
 // Hopfällda grupper i menyerna (per enhet). Årslistor är hopfällda från början.
@@ -100,8 +100,8 @@ function listGroups() {
 }
 
 // ---------- Bygga biblioteket ----------
-const PATCH_KEYS = ['s', 'r', 'p', 'note', 'pl', 'dx'];
-const EMPTY = { note: '', pl: [], dx: {} };
+const PATCH_KEYS = ['s', 'r', 'p', 'note', 'pl'];
+const EMPTY = { note: '', pl: [] };
 
 // Tar bort lokala ändringar som redan finns i grundfilen (efter att Claude slagit ihop dem).
 // Lokala ändringar gjorda före konsolmodellerna (22 nov 2026) har bara familj ('ps'/'xbox'). Om grundfilen
@@ -129,7 +129,28 @@ function prune() {
   if (n) lsSet('st_patch_v1', PATCH);
 }
 
+// Bockar från den korta perioden då tillägg bockades i (g.dx = {igdb-id: betyg}, 2026-11-24) blir riktiga spel: Klarat + betyg.
+function dxToGames() {
+  const pg = PATCH.g || {};
+  let changed = false;
+  Object.entries(pg).forEach(([pid, f]) => {
+    if (!f.dx) return;
+    const par = BASE.games.concat(PATCH.add || []).find(g => g.id === pid);
+    Object.entries(f.dx).forEach(([ig, r]) => {
+      const have = BASE.games.concat(PATCH.add || []).find(g => String(g.igdb) === ig);
+      if (have) { if (r && have.r !== r) pg[have.id] = Object.assign(pg[have.id] || {}, { r, t: Date.now() }); return; }
+      const d = par && (par.dlc || []).find(x => String(x[0]) === ig);
+      if (!d) return;
+      PATCH.add.push({ id: 'g' + ig, n: d[1], igdb: +ig, rel: d[2] ? d[2] + '-01-01' : '', s: 'played', r, p: null,
+        praw: [], gen: [], dev: [], add: new Date().toISOString() });
+    });
+    delete f.dx;
+    changed = true;
+  });
+  if (changed) lsSet('st_patch_v1', PATCH);
+}
 function rebuild() {
+  dxToGames();
   const del = PATCH.del || {}, pg = PATCH.g || {};
   GAMES = BASE.games.concat(PATCH.add || []).filter(g => !(del[g.id] > 0)).map(g => {   // del < 0 = återställt
     const m = Object.assign({}, g, pg[g.id] || {});
@@ -138,24 +159,16 @@ function rebuild() {
   });
   GM = {};
   GAMES.forEach(g => { GM[g.id] = g; });
-  // Spel som gjorts om till tillägg (BASE.moved = {gammalt id: [huvudspel, igdb-id]}): ett betyg som bara
-  // finns i lokala ändringar för det gamla spelet följer med till tillägget.
-  Object.entries(BASE.moved || {}).forEach(([old, [par, ig]]) => {
-    const f = pg[old], m = GM[par];
-    if (f && 'r' in f && m && !(pg[par] && pg[par].dx)) m.dx = Object.assign({}, m.dx, { [ig]: f.r });
-  });
+  // Tillägg: ett spel vars igdb-id finns i ett annat spels tilläggslista (g.dlc) får g.par = huvudspelets id.
+  GI = {};
+  GAMES.forEach(g => { if (g.igdb) GI[g.igdb] = g; });
+  GAMES.forEach(p => (p.dlc || []).forEach(([ig]) => { const d = GI[ig]; if (d && d !== p) d.par = p.id; }));
   LISTS = (PATCH.lists || BASE.lists).map(l => ({ id: l.id, name: l.name, ids: l.ids.filter(id => GM[id]) }));
   SERIES = {};
   GAMES.forEach(g => (g.ser || []).forEach(s => { SERIES[s] = (SERIES[s] || 0) + 1; }));
 }
 
 function save() { lsSet('st_patch_v1', PATCH); rebuild(); render(); syncSoon(); }
-// Tillägg: val = null (inte spelat) eller 0–5 (spelat, betyg). g.dx = {igdb-id: betyg}
-function setDlc(g, ig, val) {
-  const dx = Object.assign({}, g.dx || {});
-  if (val === null) delete dx[ig]; else dx[ig] = val;
-  setGame(g.id, { dx });
-}
 function setGame(id, fields) {
   PATCH.g[id] = Object.assign(PATCH.g[id] || {}, fields, { t: Date.now() });
   save();

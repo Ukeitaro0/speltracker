@@ -43,10 +43,21 @@ function fromIgdb(x) {
 }
 function addFromIgdb(igdbId) {
   const x = (IG.res || []).find(r => r.id === igdbId);
-  if (!x) return;
-  const have = GAMES.find(h => h.igdb === igdbId);
+  if (x) addGame(fromIgdb(x));
+}
+// Tillägg från huvudspelets lista: hämtar full speldata (omslag m.m.) via Workern; går det inte blir det bara namn och år.
+async function addDlc(par, ig) {
+  const d = (par.dlc || []).find(x => x[0] === ig);
+  if (!d) return;
+  let x = null;
+  try { x = (await (await fetch(API + '/games?ids=' + ig)).json())[0]; } catch (e) { }
+  addGame(x ? fromIgdb(x) : { id: 'g' + ig, n: d[1], igdb: ig, rel: d[2] ? d[2] + '-01-01' : '', s: 'backlog', r: 0, p: null,
+    praw: [], gen: [], dev: [], add: new Date().toISOString() });
+  if (!x) toast('Lagt till utan omslag (IGDB svarade inte)');
+}
+function addGame(g) {
+  const have = GAMES.find(h => h.igdb === g.igdb);
   if (have) { openGame(have.id); return; }   // finns redan
-  const g = fromIgdb(x);
   Object.keys(g).forEach(k => { if (g[k] === undefined || (Array.isArray(g[k]) && !g[k].length && k === 'ser')) delete g[k]; });
   if (!GM[g.id]) {
     if (BASE.games.some(b => b.id === g.id) || PATCH.add.some(b => b.id === g.id)) PATCH.del[g.id] = -Date.now();   // borttaget tidigare: ta tillbaka (negativt = återställt, se sync.js)

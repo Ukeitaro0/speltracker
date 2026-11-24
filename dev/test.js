@@ -134,17 +134,26 @@ const errors = [];
     if ((await p.evaluate(id => GM[id].pl[0].y, bid)) !== 2025) errors.push('mobil: år gick inte att ändra');
     await p.evaluate(() => closeGame()); await p.waitForTimeout(300);
     if (await p.evaluate(() => UI.game)) errors.push('mobil: spelkortet stängdes inte från undersida');
-    // Tillägg: WoW har Burning Crusade ibockad (gjord om från eget spel), bocka i Cataclysm och sätt betyg
+    // Tillägg: TBC är ett eget spel som hör till WoW; Cataclysm saknas och läggs till från huvudspelets lista
     await p.evaluate(() => openGame('g123')); await p.waitForSelector('#game.open');
     await p.click('[data-act="sub"][data-k="dl"]');
-    if (!(await p.$('.dlb.on'))) errors.push('mobil: flyttade tillägg är inte ibockade');
-    const cata = await p.evaluate(() => String(GM.g123.dlc.find(x => /Cataclysm/.test(x[1]))[0]));
-    await p.click(`[data-act="dlc"][data-i="${cata}"]`);
-    await p.click(`[data-act="dlcr"][data-i="${cata}"][data-n="4"]`);
-    if ((await p.evaluate(c => GM.g123.dx[c], cata)) !== 4) errors.push('mobil: betyg på tillägg sparades inte');
-    if (await p.evaluate(() => GAMES.some(g => g.id === 'g110856'))) errors.push('mobil: flyttat tillägg ligger kvar som eget spel');
+    if (!(await p.$('.dlb[data-id="g110856"]'))) errors.push('mobil: Burning Crusade syns inte som spel under WoW');
+    if ((await p.evaluate(() => GM.g110856.par)) !== 'g123') errors.push('mobil: tillägget vet inte sitt huvudspel');
+    const cata = await p.evaluate(() => GM.g123.dlc.find(x => /Cataclysm/.test(x[1]))[0]);
+    await p.route('https://speltracker.ukeitaro.workers.dev/games**', r => r.fulfill({ contentType: 'application/json',
+      body: JSON.stringify([{ id: cata, name: 'World of Warcraft: Cataclysm', first_release_date: 1291680000, cover: { image_id: 'co1xbv' } }]) }));
     await p.screenshot({ path: out + '/m19_tillagg.png' });
+    await p.click(`[data-act="dladd"][data-i="${cata}"]`); await p.waitForSelector('#game.open .opts');
+    await p.click('[data-act="status"][data-s="wishlist"]');
+    const added = await p.evaluate(c => { const g = GAMES.find(x => x.igdb === c); return g && [g.s, g.par, g.cov]; }, cata);
+    if (!added || added[0] !== 'wishlist' || added[1] !== 'g123' || added[2] !== 'co1xbv') errors.push('mobil: tillägg lades inte till rätt ' + JSON.stringify(added));
+    await p.screenshot({ path: out + '/m19b_tillagg_spel.png' });
     await p.evaluate(() => closeGame()); await p.waitForTimeout(300);
+    // Gamla bockar (g.dx) i lokala ändringar blir riktiga spel
+    const mop = await p.evaluate(() => { const d = GM.g123.dlc.find(x => /Pandaria/.test(x[1]));
+      PATCH.g.g123 = Object.assign(PATCH.g.g123 || {}, { dx: { [d[0]]: 4 } }); rebuild();
+      const g = GAMES.find(x => x.igdb === d[0]); return g && [g.s, g.r, g.par, !!PATCH.g.g123.dx]; });
+    if (!mop || mop.join() !== 'played,4,g123,false') errors.push('mobil: gamla bockar blev inte spel ' + JSON.stringify(mop));
     // Serie och utvecklare
     const mid = await p.evaluate(() => GAMES.find(g => /Man of Medan/.test(g.n)).id);
     await p.evaluate(id => openGame(id), mid); await p.waitForSelector('#game.open');

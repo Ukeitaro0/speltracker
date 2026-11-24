@@ -273,13 +273,15 @@ button.ror{width:100%}
 .search input::-webkit-search-cancel-button{display:none;-webkit-appearance:none}
 #tabs .tbar button{padding:0 4px}
 /* Tillägg (DLC/expansioner) på spelkortets undersida */
-.dlr+.dlr{border-top:1px solid var(--line)}
-.dlb{display:flex;align-items:center;gap:14px;width:100%;min-height:48px;padding:4px 16px;text-align:left;font-size:16px}
-.dlb .dn{flex:1;min-width:0}
+.dlr+.dlr,.dlcl>*+*{border-top:1px solid var(--line)}
+.dlb{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:4px 12px 4px 16px;text-align:left;font-size:16px}
+.dlb .dn{flex:1;min-width:0;display:flex;flex-direction:column}
+.dlb .dn small{font-size:12px;letter-spacing:1px}
 .dlb .mute{font-size:14px}
-.ck{width:28px;height:28px;border-radius:14px;flex-shrink:0;box-shadow:inset 0 0 0 2px var(--staroff2);display:flex;align-items:center;justify-content:center}
-.dlb.on .ck{background:var(--acc);color:var(--bg);box-shadow:none}
-.dlb:has(+.dls){padding-bottom:0;min-height:40px}
-.dls{display:flex;padding:0 0 6px 52px;margin-top:-2px}
-.dls button{width:30px;height:30px;font-size:18px;color:var(--staroff2)}
-.dls button.on{color:var(--star)}
+.dlb.off .dn{color:var(--mute)}
+.ck{width:26px;height:26px;border-radius:13px;flex-shrink:0;box-shadow:inset 0 0 0 2px var(--staroff2);display:flex;align-items:center;justify-content:center}
+.dlb:not(.off) .ck{box-shadow:none}
+.dla{width:36px;height:36px;border-radius:18px;background:var(--surf2);color:var(--acc);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.partof{margin-top:8px;min-height:32px;font-size:14px;color:var(--mute);text-align:left}
+.partof b{color:var(--text);font-weight:600;text-decoration:underline;text-decoration-color:var(--staroff);text-underline-offset:3px}
+.cover>.dlcb{position:absolute;left:8px;bottom:8px;padding:3px 8px;border-radius:9px;background:rgba(10,14,13,.72);color:var(--text);font-size:11px;font-weight:600}
