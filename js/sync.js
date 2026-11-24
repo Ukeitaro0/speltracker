@@ -83,21 +83,26 @@ function disconnectSync() {
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { syncNow(); loadSteam(); } });
 
-// ---------- Spelkonton: Steam och Xbox (GET /steam, /xbox – samma kod som synken) ----------
-// Sparas per enhet i localStorage st_steam / st_xbox.
+// ---------- Spelkonton: Steam, Xbox och PlayStation (GET /steam, /xbox, /psn – samma kod som synken) ----------
+// Sparas per enhet i localStorage st_steam / st_xbox / st_psn.
 //   steam: {t, games: [[appid, namn, minuter, senast (unix-sek), igdb|null]]}
 //   xbox:  {t, games: [[titleId, namn, senast (unix-sek), enheter]]}
-const ACC = { steam: ls('st_steam', null), xbox: ls('st_xbox', null) };
-const ACC_ERR = { steam: '', xbox: '' };
+//   psn:   {t, games: [[titleId, namn, minuter, senast (unix-sek)]]}
+const ACC = { steam: ls('st_steam', null), xbox: ls('st_xbox', null), psn: ls('st_psn', null) };
+const ACC_ERR = { steam: '', xbox: '', psn: '' };
 let ACCI = null;
 function accIndex() {
-  ACCI = { sIg: {}, sNm: {}, xNm: {} };
+  ACCI = { sIg: {}, sNm: {}, xNm: {}, pNm: {} };
   ((ACC.steam && ACC.steam.games) || []).forEach(([app, n, mins, last, ig]) => {
     const x = { mins, last };
     if (ig) ACCI.sIg[ig] = x;
     ACCI.sNm[norm(n)] = x;
   });
   ((ACC.xbox && ACC.xbox.games) || []).forEach(([id, n, last]) => { ACCI.xNm[norm(n)] = { last }; });
+  ((ACC.psn && ACC.psn.games) || []).forEach(([id, n, mins, last]) => {   // samma spel kan finnas för PS4 och PS5: lägg ihop
+    const k = norm(n), o = ACCI.pNm[k];
+    ACCI.pNm[k] = o ? { mins: o.mins + mins, last: Math.max(o.last, last) } : { mins, last };
+  });
 }
 // Steam via IGDB-kopplingen, annars på namn. Xbox på namn.
 function steamOf(g) {
@@ -110,11 +115,15 @@ function xboxOf(g) {
   if (!ACCI) accIndex();
   return ACCI.xNm[norm(g.n)] || null;
 }
+function psnOf(g) {
+  if (!ACC.psn) return null;
+  if (!ACCI) accIndex();
+  return ACCI.pNm[norm(g.n)] || null;
+}
 // Senast spelad (unix-sek) på något konto, och var.
 function lastPlayed(g) {
-  const s = steamOf(g), x = xboxOf(g);
-  const a = (s && s.last) || 0, b = (x && x.last) || 0;
-  return b > a ? { t: b, src: 'Xbox' } : a ? { t: a, src: 'Steam' } : null;
+  return [[steamOf(g), 'Steam'], [xboxOf(g), 'Xbox'], [psnOf(g), 'PlayStation']]
+    .filter(([x]) => x && x.last).map(([x, src]) => ({ t: x.last, src })).sort((a, b) => b.t - a.t)[0] || null;
 }
 async function loadAccount(k, force) {
   const cur = ACC[k];
@@ -131,23 +140,25 @@ async function loadAccount(k, force) {
 }
 async function loadSteam(force) {   // båda kontona (namnet kvar sedan Steam kom först)
   if (!SYNC.key) return;
-  await Promise.all([loadAccount('steam', force), loadAccount('xbox', force)]);
+  await Promise.all([loadAccount('steam', force), loadAccount('xbox', force), loadAccount('psn', force)]);
   const a = document.activeElement;
   if (!drag && !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) render();
 }
 function steamStatus() {
   const one = (k, label) => ACC_ERR[k] ? label + ': ' + ACC_ERR[k] : ACC[k] ? label + ' ' + (ACC[k].games || []).length : '';
-  return [one('steam', 'Steam'), one('xbox', 'Xbox')].filter(Boolean).join(' · ') || 'Inte hämtad';
+  return [one('steam', 'Steam'), one('xbox', 'Xbox'), one('psn', 'PS')].filter(Boolean).join(' · ') || 'Inte hämtad';
 }
-// "Senast spelad för 3 dagar sedan på Xbox · 21 h på Steam"
+// "Senast spelad för 3 dagar sedan på Xbox · 21 h på Steam · 40 h på PlayStation"
 function steamLine(g) {
-  const s = steamOf(g), lp = lastPlayed(g), parts = [];
+  const lp = lastPlayed(g), parts = [];
+  const hours = [[steamOf(g), 'Steam'], [psnOf(g), 'PlayStation']].filter(([x]) => x && x.mins)
+    .map(([x, src]) => ({ src, t: (x.mins < 60 ? x.mins + ' min' : Math.round(x.mins / 60) + ' h') + ' på ' + src }));   // hårt mellanslag
   if (lp) {
     const d = new Date(lp.t * 1000), days = Math.floor((Date.now() - d) / 864e5);
     const when = days < 1 ? 'i dag' : days < 2 ? 'i går' : days < 30 ? 'för ' + days + ' dagar sedan'
       : d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric' });
-    parts.push('Senast spelad ' + when + (lp.src === 'Xbox' || !(s && s.mins) ? ' på ' + lp.src : ''));   // "på Steam" står redan efter timmarna
+    // "på X" behövs inte om raden ändå slutar med timmar på samma konto
+    parts.push('Senast spelad ' + when + (hours.length === 1 && hours[0].src === lp.src ? '' : ' på ' + lp.src));
   }
-  if (s && s.mins) parts.push((s.mins < 60 ? s.mins + ' min' : Math.round(s.mins / 60) + ' h') + ' på Steam');   // hårt mellanslag
-  return parts.join(' · ');
+  return parts.concat(hours.map(h => h.t)).join(' · ');
 }

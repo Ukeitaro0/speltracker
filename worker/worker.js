@@ -13,6 +13,10 @@
 //                           Kräver Secret STEAM_KEY (Steam Web API-nyckel) och variabeln STEAM_ID (SteamID64).
 // GET /xbox               → dina Xbox-spel med senast spelad, via OpenXBL (xbl.io). Som /steam.
 //                           Kräver Secret XBL_KEY (API-nyckel från xbl.io).
+// GET /psn                → dina PlayStation-spel (PS4/PS5) med speltid och senast spelad. Som /steam.
+//                           Inofficiellt (samma väg som Sonys app). Kräver Secret PSN_NPSSO: logga in på
+//                           playstation.com och öppna https://ca.account.sony.com/api/v1/ssocookie – värdet "npsso".
+//                           Gäller ungefär två månader, sedan måste det bytas.
 
 const ALLOWED = ['https://ukeitaro0.github.io'];
 const FIELDS = 'fields name,first_release_date,cover.image_id,platforms.abbreviation,genres.name,involved_companies.company.name,involved_companies.developer,aggregated_rating,rating,collections.name;';
@@ -122,6 +126,42 @@ async function xboxFetch(env) {
   await saveStore(env, 'xbox', data);
   return data;
 }
+// ---------- PlayStation (inofficiellt) ----------
+// npsso → engångskod → åtkomstnyckel → spellista. Sparas som {t, games: [[titleId, namn, minuter, senast (unix-sek)]]}.
+const PSN_AUTH = 'https://ca.account.sony.com/api/authz/v3/oauth';
+const PSN_APP = { id: '09515159-7237-4370-9b40-3806e67c0891', redirect: 'com.scee.psxandroid.scecompcall://redirect',
+  basic: 'MDk1MTUxNTktNzIzNy00MzcwLTliNDAtMzgwNmU2N2MwODkxOnVjUGprYTV0bnRCMktxc1A=' };
+async function psnToken(env) {
+  const q = new URLSearchParams({ access_type: 'offline', client_id: PSN_APP.id, redirect_uri: PSN_APP.redirect,
+    response_type: 'code', scope: 'psn:mobile.v2.core psn:clientapp' });
+  const r = await fetch(PSN_AUTH + '/authorize?' + q, { headers: { Cookie: 'npsso=' + env.PSN_NPSSO }, redirect: 'manual' });
+  const code = new URL(r.headers.get('Location') || 'x:/', 'x:/').searchParams.get('code');
+  if (!code) throw new Error('PSN tog inte emot npsso – hämta en ny (logga in på playstation.com, se kommentaren i worker.js)');
+  const t = await fetch(PSN_AUTH + '/token', {
+    method: 'POST',
+    headers: { 'Authorization': 'Basic ' + PSN_APP.basic, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ code, redirect_uri: PSN_APP.redirect, grant_type: 'authorization_code', token_format: 'jwt' }),
+  });
+  if (!t.ok) throw new Error('PSN-inloggningen svarade ' + t.status);
+  return (await t.json()).access_token;
+}
+const isoMin = d => { const m = /P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?/.exec(d || ''); return m ? ((+m[1] || 0) * 24 + (+m[2] || 0)) * 60 + (+m[3] || 0) : 0; };   // "PT228H56M33S"
+async function psnFetch(env) {
+  if (!env.PSN_NPSSO) throw new Error('PSN_NPSSO saknas i Cloudflare');
+  const tk = await psnToken(env), games = [];
+  for (let off = 0, i = 0; off !== undefined && off !== null && i < 20; i++) {
+    const r = await fetch('https://m.np.playstation.com/api/gamelist/v2/users/me/titles?categories=ps4_game,ps5_native_game&limit=200&offset=' + off,
+      { headers: { 'Authorization': 'Bearer ' + tk } });
+    if (!r.ok) throw new Error('PSN svarade ' + r.status);
+    const j = await r.json();
+    (j.titles || []).forEach(x => games.push([x.titleId, x.name, isoMin(x.playDuration),
+      x.lastPlayedDateTime ? Math.floor(Date.parse(x.lastPlayedDateTime) / 1000) || 0 : 0]));
+    off = j.nextOffset;
+  }
+  const data = { t: Date.now(), games };
+  await saveStore(env, 'psn', data);
+  return data;
+}
 async function saveStore(env, k, data) {
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS store (k TEXT PRIMARY KEY, v TEXT NOT NULL, t INTEGER NOT NULL)').run();
   await env.DB.prepare('INSERT INTO store (k, v, t) VALUES (?, ?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v, t = excluded.t')
@@ -156,6 +196,7 @@ export default {
       if (url.pathname === '/sync' && req.method === 'POST') return await sync(req, env, cors);
       if (url.pathname === '/steam') return await account(req, env, cors, url, 'steam', steamFetch);
       if (url.pathname === '/xbox') return await account(req, env, cors, url, 'xbox', xboxFetch);
+      if (url.pathname === '/psn') return await account(req, env, cors, url, 'psn', psnFetch);
       if (!env.TWITCH_CLIENT_ID || !env.TWITCH_CLIENT_SECRET) return json({ error: 'Hemligheterna saknas i Cloudflare' }, cors, 500);
       if (url.pathname === '/search') {
         const q = (url.searchParams.get('q') || '').replace(/["\\]/g, '').trim().slice(0, 100);
@@ -169,15 +210,16 @@ export default {
       }
       return json({ ok: true, app: 'speltracker', twitch: (await token(env)) ? 'ok' : 'fel',
         sync: env.SYNC_KEY && env.DB ? 'ok' : 'ej uppsatt', steam: env.STEAM_KEY && env.STEAM_ID ? 'ok' : 'ej uppsatt',
-        xbox: env.XBL_KEY ? 'ok' : 'ej uppsatt' }, cors);
+        xbox: env.XBL_KEY ? 'ok' : 'ej uppsatt', psn: env.PSN_NPSSO ? 'ok' : 'ej uppsatt' }, cors);
     } catch (e) {
       return json({ error: String(e.message || e) }, cors, 502);
     }
   },
-  // Cron-trigger (Settings → Triggers → Cron, t.ex. 0 4 * * *): hämtar Steam och Xbox en gång per dygn.
+  // Cron-trigger (Settings → Triggers → Cron, t.ex. 0 4 * * *): hämtar kontona en gång per dygn.
   async scheduled(event, env, ctx) {
     if (!env.DB) return;
     if (env.STEAM_KEY && env.STEAM_ID) ctx.waitUntil(steamFetch(env));
     if (env.XBL_KEY) ctx.waitUntil(xboxFetch(env));
+    if (env.PSN_NPSSO) ctx.waitUntil(psnFetch(env));
   },
 };

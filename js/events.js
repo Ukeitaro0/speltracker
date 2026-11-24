@@ -153,7 +153,7 @@ const ACTIONS = {
   fold: b => { toggleFold(b.dataset.k); renderSide(); renderSheet(); if (UI.tab === 'lists') renderBody(); },
   synckey: () => connectSync(),
   syncnow: () => { syncNow(); renderBody(); },
-  steamnow: () => { toast('Hämtar från Steam och Xbox…'); loadSteam(true); },
+  steamnow: () => { toast('Hämtar från Steam, Xbox och PlayStation…'); loadSteam(true); },
   syncoff: () => disconnectSync(),
   export: () => {
     const txt = JSON.stringify({ speltracker: BUILD, patch: PATCH });
