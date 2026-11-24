@@ -274,11 +274,12 @@ button.ror{width:100%}
 #tabs .tbar button{padding:0 4px}
 /* Tillägg (DLC/expansioner) på spelkortets undersida */
 .dlr+.dlr{border-top:1px solid var(--line)}
-.dlb{display:flex;align-items:center;gap:14px;width:100%;min-height:52px;padding:8px 16px;text-align:left;font-size:16px}
+.dlb{display:flex;align-items:center;gap:14px;width:100%;min-height:48px;padding:4px 16px;text-align:left;font-size:16px}
 .dlb .dn{flex:1;min-width:0}
 .dlb .mute{font-size:14px}
 .ck{width:28px;height:28px;border-radius:14px;flex-shrink:0;box-shadow:inset 0 0 0 2px var(--staroff2);display:flex;align-items:center;justify-content:center}
 .dlb.on .ck{background:var(--acc);color:var(--bg);box-shadow:none}
-.dls{display:flex;padding:0 0 8px 54px}
-.dls button{width:34px;height:40px;font-size:20px;color:var(--staroff2)}
+.dlb:has(+.dls){padding-bottom:0;min-height:40px}
+.dls{display:flex;padding:0 0 6px 52px;margin-top:-2px}
+.dls button{width:30px;height:30px;font-size:18px;color:var(--staroff2)}
 .dls button.on{color:var(--star)}
