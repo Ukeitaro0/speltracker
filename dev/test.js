@@ -134,6 +134,17 @@ const errors = [];
     if ((await p.evaluate(id => GM[id].pl[0].y, bid)) !== 2025) errors.push('mobil: år gick inte att ändra');
     await p.evaluate(() => closeGame()); await p.waitForTimeout(300);
     if (await p.evaluate(() => UI.game)) errors.push('mobil: spelkortet stängdes inte från undersida');
+    // Tillägg: WoW har Burning Crusade ibockad (gjord om från eget spel), bocka i Cataclysm och sätt betyg
+    await p.evaluate(() => openGame('g123')); await p.waitForSelector('#game.open');
+    await p.click('[data-act="sub"][data-k="dl"]');
+    if (!(await p.$('.dlb.on'))) errors.push('mobil: flyttade tillägg är inte ibockade');
+    const cata = await p.evaluate(() => String(GM.g123.dlc.find(x => /Cataclysm/.test(x[1]))[0]));
+    await p.click(`[data-act="dlc"][data-i="${cata}"]`);
+    await p.click(`[data-act="dlcr"][data-i="${cata}"][data-n="4"]`);
+    if ((await p.evaluate(c => GM.g123.dx[c], cata)) !== 4) errors.push('mobil: betyg på tillägg sparades inte');
+    if (await p.evaluate(() => GAMES.some(g => g.id === 'g110856'))) errors.push('mobil: flyttat tillägg ligger kvar som eget spel');
+    await p.screenshot({ path: out + '/m19_tillagg.png' });
+    await p.evaluate(() => closeGame()); await p.waitForTimeout(300);
     // Serie och utvecklare
     const mid = await p.evaluate(() => GAMES.find(g => /Man of Medan/.test(g.n)).id);
     await p.evaluate(id => openGame(id), mid); await p.waitForSelector('#game.open');

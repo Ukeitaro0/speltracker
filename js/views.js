@@ -229,7 +229,7 @@ function renderBody() {
 
 // ---------- Spelkortet ----------
 // Huvudsidan: Status, Betyg, Plattform, Notering + rader som öppnar egna sidor (UI.sub = 'po' | 'lo' | 'oo').
-const SUBS = { po: 'Genomspelningar', lo: 'Listor', oo: 'Om spelet' };
+const SUBS = { dl: 'Tillägg', po: 'Genomspelningar', lo: 'Listor', oo: 'Om spelet' };
 const check = () => `<span style="color:var(--acc)">${ico('check', 18)}</span>`;
 function statusPart(g, s) {
   const head = `<button class="row" data-act="so"><span>Status</span>
@@ -292,6 +292,20 @@ function playthroughBody(g) {
   return `<div class="pls">${pl.map(row).join('')}
     <button class="chip add" data-act="pladd">+ Lägg till genomspelning</button></div>`;
 }
+// Tillägg från IGDB: rund bock per rad, stjärnor när den är ibockad. Spelets namn tas bort ur tilläggets.
+const dlcDone = g => (g.dlc || []).filter(([id]) => id in (g.dx || {})).length;
+function dlcBody(g) {
+  const dx = g.dx || {}, pre = new RegExp('^' + g.n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[:\\-–]\\s*', 'i');
+  return `<div class="dlcl">${(g.dlc || []).map(([id, n, y]) => {
+    const on = id in dx, name = n.replace(pre, '') || n;
+    const starBtns = [1, 2, 3, 4, 5].map(k => `<button data-act="dlcr" data-i="${id}" data-n="${k}" aria-label="${k} av 5, ${RATE[k]}"
+        title="${RATE[k]}" class="${k <= dx[id] ? 'on' : ''}">★</button>`).join('');
+    return `<div class="dlr">
+      <button class="dlb${on ? ' on' : ''}" data-act="dlc" data-i="${id}" aria-pressed="${on}">
+        <span class="ck">${on ? ico('st-played', 14) : ''}</span><span class="dn">${esc(name)}</span><span class="mute">${y || ''}</span></button>
+      ${on ? `<div class="dls">${starBtns}</div>` : ''}</div>`;
+  }).join('')}</div>`;
+}
 function listsBodyFor(g) {
   return `<div class="chips">
     ${LISTS.map(l => `<button class="chip${l.ids.includes(g.id) ? ' on' : ''}" data-act="togglelist" data-l="${l.id}">${esc(l.name)}</button>`).join('')}
@@ -344,10 +358,11 @@ function renderGame() {
     </div>`;
   let main;
   if (UI.sub) {
-    const body = { po: playthroughBody, lo: listsBodyFor, oo: aboutBody }[UI.sub](g);
+    const body = { dl: dlcBody, po: playthroughBody, lo: listsBodyFor, oo: aboutBody }[UI.sub](g);
+    const info = UI.sub === 'dl' ? ` · ${dlcDone(g)} av ${g.dlc.length} spelade` : '';
     main = `<div class="gtop"><button class="icon round" data-act="back" aria-label="Tillbaka">${ico('back', 22)}</button></div>
-      ${hero}<div class="gsub"><h2>${SUBS[UI.sub]}</h2><span class="mute">${esc(g.n)}</span></div>
-      <div class="box pad">${body}</div>`;
+      ${hero}<div class="gsub"><h2>${SUBS[UI.sub]}</h2><span class="mute">${esc(g.n)}${info}</span></div>
+      <div class="box${UI.sub === 'dl' ? '' : ' pad'}">${body}</div>`;
   } else {
     const inL = LISTS.filter(l => l.ids.includes(g.id)).map(l => esc(l.name));
     const pl = g.pl || [];
@@ -362,7 +377,7 @@ function renderGame() {
         <label class="nlab"><span>Notering</span>
           <textarea class="notein" data-act="note" rows="1" maxlength="500" placeholder="Skriv något om spelet">${esc(g.note || '')}</textarea></label>
       </div>
-      <div class="box">${subRow('po', pl.length ? pl.map(x => x.y).join(', ') : 'Inga')}${sep}${subRow('lo', inL.length ? inL.join(', ') : 'Ingen')}${sep}${subRow('oo', '')}</div>`;
+      <div class="box">${(g.dlc || []).length ? subRow('dl', `${dlcDone(g)} av ${g.dlc.length}`) + sep : ''}${subRow('po', pl.length ? pl.map(x => x.y).join(', ') : 'Inga')}${sep}${subRow('lo', inL.length ? inL.join(', ') : 'Ingen')}${sep}${subRow('oo', '')}</div>`;
   }
   el.innerHTML = `<div class="backdrop" data-act="close"></div>
   <div class="gp${UI.sub ? ' subp' : ''}" style="--tint:${rgba(s.c, 0.16)}">${main}</div>
