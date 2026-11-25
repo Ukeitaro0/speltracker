@@ -86,8 +86,8 @@ const UI = {                       // tillfälligt läge i gränssnittet
 let GAMES = [], GM = {}, GI = {}, LISTS = [], SERIES = {};   // SERIES = {serienamn: antal spel i biblioteket}, GI = {igdb-id: spel}
 
 function setView(o) { Object.assign(V, o); lsSet('st_view_v1', V); }
-// Hopfällda grupper i menyerna (per enhet). Årslistor är hopfällda från början.
-const FOLD = Object.assign({ years: true }, ls('st_fold_v1', {}));
+// Hopfällda grupper i menyerna (per enhet). Årslistor och Plattformar är hopfällda från början.
+const FOLD = Object.assign({ years: true, plat: true }, ls('st_fold_v1', {}));
 function toggleFold(k) { FOLD[k] = !FOLD[k]; lsSet('st_fold_v1', FOLD); }
 
 // Listorna delade i egna listor (Robins ordning) och årslistor ("played ÅÅÅÅ", nyaste året först).
@@ -234,6 +234,7 @@ function setPlatform(g, p) {
 
 // Alla plattformar (id) spelet spelats på: aktuell först, sedan tidigare genomspelningar.
 // En familj utan modell räknas inte om samma familj finns med modell.
+const onPlat = (g, id) => plats(g).some(p => p === id || (id === famOf(id) && famOf(p) === id));
 function plats(g) {
   const a = [];
   [g.p].concat((g.pl || []).slice().reverse().map(x => x.p))
@@ -256,7 +257,7 @@ function sortGames(arr) {
   };
   return arr.slice().sort(by[s] || by.add);
 }
-// Det som biblioteksvyn visar just nu (V.f = all | s:<status> | l:<lista> | noplat | cf).
+// Det som biblioteksvyn visar just nu (V.f = all | s:<status> | l:<lista> | p:<plattform> | ser: | dev: | noplat | cf).
 function current() {
   const f = V.f;
   if (f.startsWith('s:') && SM[f.slice(2)]) {
@@ -271,6 +272,11 @@ function current() {
   const byRel = arr => arr.slice().sort((a, b) => (a.rel || '9').localeCompare(b.rel || '9') || cmpName(a, b));
   if (f.startsWith('ser:')) return { arr: byRel(GAMES.filter(g => (g.ser || []).includes(f.slice(4)))), title: f.slice(4), fixed: 'serie' };
   if (f.startsWith('dev:')) return { arr: byRel(GAMES.filter(g => (g.dev || []).includes(f.slice(4)))), title: f.slice(4), fixed: 'utvecklare' };
+  // Plattform: familj (alla modeller) eller en enskild modell, bland alla plattformar spelet spelats på.
+  if (f.startsWith('p:') && PLATS[f.slice(2)]) {
+    const id = f.slice(2);
+    return { arr: sortGames(GAMES.filter(g => onPlat(g, id))), title: platLabel(id), plat: id };
+  }
   if (f === 'noplat') return { arr: sortGames(GAMES.filter(g => !g.p)), title: 'Saknar plattform' };
   if (f === 'cf') return { arr: sortGames(GAMES.filter(g => g.cf)), title: 'Kolla status' };
   if (f !== 'all') setView({ f: 'all' });

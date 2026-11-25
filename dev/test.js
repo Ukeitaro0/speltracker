@@ -212,7 +212,7 @@ const errors = [];
     // Sidomeny: årslistor hopfällda från början, nyaste året först när de fälls ut
     if (await q.$('#side [data-f^="l:"][data-f*="l1795"]')) errors.push('dator: årslistor syntes trots hopfälld grupp');
     await q.click('#side [data-act="fold"][data-k="years"]');
-    const yrs = await q.$$eval('#side .sscroll .rows:last-child .nrow', els => els.map(e => e.textContent.trim().match(/\d{4}/)?.[0]).filter(Boolean).map(Number));
+    const yrs = await q.$$eval('#side [data-k="years"] + .rows .nrow', els => els.map(e => e.textContent.trim().match(/\d{4}/)?.[0]).filter(Boolean).map(Number));
     if (yrs.join() !== yrs.slice().sort((a, b) => b - a).join() || yrs.length < 10) errors.push('dator: årslistor inte i fallande ordning ' + yrs);
     await q.screenshot({ path: out + '/d1b_sidomeny.png' });
     await q.keyboard.press('/');

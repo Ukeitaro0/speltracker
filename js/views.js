@@ -43,10 +43,10 @@ function card(g, rank) {
 
 // ---------- Navigering (sidomeny på dator, ark på mobil, flikrad) ----------
 function navRows() {
-  const row = (f, label, n, color) => {
+  const row = (f, label, n, color, icon, cls = '') => {
     const on = V.f === f && UI.tab === 'lib' && !UI.q;
-    return `<button class="nrow${on ? ' on' : ''}" data-act="filter" data-f="${f}">
-      <span class="nl">${color ? dot(color) : ''}<span>${esc(label)}</span></span><span class="nc">${n}</span></button>`;
+    return `<button class="nrow${cls}${on ? ' on' : ''}" data-act="filter" data-f="${f}">
+      <span class="nl">${color ? dot(color) : ''}${icon ? ico(icon, 18) : ''}<span>${esc(label)}</span></span><span class="nc">${n}</span></button>`;
   };
   const count = id => GAMES.filter(g => g.s === id).length;
   const { own, years } = listGroups();
@@ -54,7 +54,19 @@ function navRows() {
       + ST.map(s => row('s:' + s.id, s.label, count(s.id), s.c)).join(''))
     + foldGroup('lists', 'Listor', own.map(l => row('l:' + l.id, l.name, l.ids.length)).join('')
       + `<button class="nrow add" data-act="newlist"><span class="nl">${ico('plus', 18)}<span>Ny lista</span></span></button>`)
-    + (years.length ? foldGroup('years', 'Årslistor', years.map(l => row('l:' + l.id, l.name, l.ids.length)).join(''), years.length) : '');
+    + (years.length ? foldGroup('years', 'Årslistor', years.map(l => row('l:' + l.id, l.name, l.ids.length)).join(''), years.length) : '')
+    + foldGroup('plat', 'Plattformar', platRows(row));
+}
+// Plattformsfamiljer med antal spel, och under varje familj de modeller som har spel.
+function platRows(row) {
+  const n = id => GAMES.filter(g => onPlat(g, id)).length;
+  return FAMS.concat([{ id: 'other', models: [] }]).map(f => {
+    const c = n(f.id);
+    if (!c) return '';
+    const models = f.models.map(([id]) => [id, n(id)]).filter(([, m]) => m);
+    return row('p:' + f.id, platLabel(f.id), c, null, f.id === 'other' ? 'other' : f.id)
+      + models.map(([id, m]) => row('p:' + id, platInfo(id).short, m, null, null, ' nmod')).join('');
+  }).join('');
 }
 // Rubrik som fäller ihop/upp sin grupp. Läget sparas per enhet (FOLD i data.js).
 function foldGroup(k, title, rows, n) {

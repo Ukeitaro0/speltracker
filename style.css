@@ -58,6 +58,7 @@ svg{flex-shrink:0}
 .nrow .nl span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nrow .nc{color:var(--mute);font-size:14px}
 .nrow.add{color:var(--acc)}
+.nrow.nmod{min-height:40px;padding-left:44px;font-size:15px;color:var(--mute)}
 .sect{padding:16px 14px 6px;font-size:13px;font-weight:500;color:var(--mute)}
 .sect.fold{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:40px;text-align:left}
 .sect.fold i{font-style:normal;opacity:.7}
@@ -236,6 +237,7 @@ button.ror{width:100%}
   #side .sscroll{flex:1;min-height:0;overflow-y:auto;margin:0 -12px;padding:0 12px;border-top:1px solid var(--line)}
   #side .brand{font-size:20px;font-weight:700;padding:0 14px 10px}
   #side .nrow{min-height:42px;font-size:15px;border-radius:14px}
+  #side .nrow.nmod{min-height:34px;font-size:14px}
   #side .foot{margin-top:auto;border-top:1px solid var(--line);padding-top:10px}
   #main{padding:28px 36px 60px}
   #tabs,#sheet{display:none !important}
