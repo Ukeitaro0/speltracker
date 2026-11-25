@@ -5,6 +5,9 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+html{color-scheme:dark}
+/* Rullister: smala och i temats färger (sidomenyns syns bara när musen är över den) */
+*{scrollbar-width:thin;scrollbar-color:var(--hi) transparent}
 body.lock{overflow:hidden}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:none;padding:0}
@@ -239,7 +242,8 @@ button.ror{width:100%}
 @media (min-width:900px){
   #app{display:grid;grid-template-columns:272px minmax(0,1fr)}
   #side{display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;overflow:hidden;background:#17211E;border-right:1px solid var(--line);padding:24px 12px}
-  #side .sscroll{flex:1;min-height:0;overflow-y:auto;margin:0 -12px;padding:0 12px;border-top:1px solid var(--line)}
+  #side .sscroll{flex:1;min-height:0;overflow-y:auto;margin:0 -12px;padding:0 12px;border-top:1px solid var(--line);scrollbar-color:transparent transparent;transition:scrollbar-color .2s}
+  #side .sscroll:hover{scrollbar-color:var(--hi) transparent}
   #side .brand{font-size:20px;font-weight:700;padding:0 14px 10px}
   #side .nrow{min-height:42px;font-size:15px;border-radius:14px}
   #side .nrow.nmod{min-height:34px;font-size:14px}
