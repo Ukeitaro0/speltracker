@@ -58,6 +58,11 @@ svg{flex-shrink:0}
 .nrow .nl span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nrow .nc{color:var(--mute);font-size:14px}
 .nrow.add{color:var(--acc)}
+.prow{display:flex;align-items:center}
+.prow .nrow{flex:1;min-width:0}
+.pchev{flex:none;width:40px;min-height:44px;display:flex;align-items:center;justify-content:center;color:var(--mute);border-radius:12px}
+.pchev svg{transform:rotate(-90deg);transition:transform .15s}
+.pchev.open svg{transform:none}
 .nrow.nmod{min-height:40px;padding-left:44px;font-size:15px;color:var(--mute)}
 .sect{padding:16px 14px 6px;font-size:13px;font-weight:500;color:var(--mute)}
 .sect.fold{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:40px;text-align:left}

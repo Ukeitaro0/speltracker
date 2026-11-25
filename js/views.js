@@ -57,15 +57,20 @@ function navRows() {
     + (years.length ? foldGroup('years', 'Årslistor', years.map(l => row('l:' + l.id, l.name, l.ids.length)).join(''), years.length) : '')
     + foldGroup('plat', 'Plattformar', platRows(row));
 }
-// Plattformsfamiljer med antal spel, och under varje familj de modeller som har spel.
+// Plattformsfamiljer med antal spel; under varje familj (utfällbar) de modeller som har spel.
 function platRows(row) {
   const n = id => GAMES.filter(g => onPlat(g, id)).length;
   return FAMS.concat([{ id: 'other', models: [] }]).map(f => {
     const c = n(f.id);
     if (!c) return '';
     const models = f.models.map(([id]) => [id, n(id)]).filter(([, m]) => m);
-    return row('p:' + f.id, platLabel(f.id), c, null, f.id === 'other' ? 'other' : f.id)
-      + models.map(([id, m]) => row('p:' + id, platInfo(id).short, m, null, null, ' nmod')).join('');
+    const fam = row('p:' + f.id, platLabel(f.id), c, null, f.id === 'other' ? 'other' : f.id);
+    if (!models.length) return fam;
+    // Modellerna fälls ut med pilen (hopfällda från början; öppen om en modell är vald).
+    const open = FOLD['pfo:' + f.id] || models.some(([id]) => V.f === 'p:' + id);
+    return `<div class="prow">${fam}<button class="pchev${open ? ' open' : ''}" data-act="fold" data-k="pfo:${f.id}"
+        aria-expanded="${!!open}" aria-label="Modeller för ${platLabel(f.id)}">${ico('chev', 14)}</button></div>`
+      + (open ? models.map(([id, m]) => row('p:' + id, platInfo(id).short, m, null, null, ' nmod')).join('') : '');
   }).join('');
 }
 // Rubrik som fäller ihop/upp sin grupp. Läget sparas per enhet (FOLD i data.js).
